@@ -108,7 +108,7 @@ kubectl apply -f k8s/
 
 ## License
 
-Copyright © 2024 **Sofia Vicedomini**
+Copyright © 2026 **Sofia Vicedomini**
 
 This project is released under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 You may use, copy, modify, and distribute this software under the terms of the GPL v3.
