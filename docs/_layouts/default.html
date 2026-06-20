@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>{% if page.title %}{{ page.title }} — {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}" />
+</head>
+<body class="body-grid body-scanlines">
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="{{ '/' | relative_url }}" class="nav-logo">
+        <span class="logo-vdown">V<span class="logo-down">Down</span></span>
+        <span class="logo-badge">DOCS</span>
+      </a>
+      <div class="nav-links">
+        <a href="{{ '/' | relative_url }}" class="nav-link">Overview</a>
+        <a href="{{ '/local-development/' | relative_url }}" class="nav-link">Local Dev</a>
+        <a href="{{ '/configuration/' | relative_url }}" class="nav-link">Config</a>
+        <a href="{{ '/architecture/' | relative_url }}" class="nav-link">Architecture</a>
+      </div>
+      <button class="nav-hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-mobile" id="mobile-menu">
+      <a href="{{ '/' | relative_url }}" class="nav-mobile-link">Overview</a>
+      <a href="{{ '/local-development/' | relative_url }}" class="nav-mobile-link">Local Dev</a>
+      <a href="{{ '/configuration/' | relative_url }}" class="nav-mobile-link">Config</a>
+      <a href="{{ '/architecture/' | relative_url }}" class="nav-mobile-link">Architecture</a>
+    </div>
+  </nav>
+
+  <!-- Layout -->
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav">
+        <div class="sidebar-section">
+          <p class="sidebar-heading">Getting Started</p>
+          <a href="{{ '/' | relative_url }}" class="sidebar-link {% if page.url == '/' %}sidebar-link--active{% endif %}">Overview</a>
+          <a href="{{ '/local-development/' | relative_url }}" class="sidebar-link {% if page.url contains 'local-development' %}sidebar-link--active{% endif %}">Local Development</a>
+          <a href="{{ '/configuration/' | relative_url }}" class="sidebar-link {% if page.url contains 'configuration' %}sidebar-link--active{% endif %}">Configuration</a>
+        </div>
+        <div class="sidebar-section">
+          <p class="sidebar-heading">Reference</p>
+          <a href="{{ '/architecture/' | relative_url }}" class="sidebar-link {% if page.url contains 'architecture' %}sidebar-link--active{% endif %}">Architecture</a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <article class="prose">
+        {% if page.title %}
+        <h1 class="page-title">{{ page.title }}</h1>
+        {% endif %}
+        {{ content }}
+      </article>
+    </main>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-meta">
+        <span class="footer-copy">© {{ site.time | date: "%Y" }} <strong>Sofia Vicedomini</strong> — VDown Video</span>
+        <span class="footer-license">Released under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" class="footer-link" target="_blank" rel="noopener">GNU General Public License v3.0</a></span>
+      </div>
+    </div>
+    <div class="footer-kofi">
+      <iframe
+        id="kofiframe"
+        src="https://ko-fi.com/blacksoulgem95/?hidefeed=true&widget=true&embed=true&preview=true"
+        style="border:none;width:100%;padding:4px;background:#f9f9f9;"
+        height="712"
+        title="blacksoulgem95"
+      ></iframe>
+    </div>
+  </footer>
+
+  <script>
+    const btn = document.getElementById('hamburger');
+    const menu = document.getElementById('mobile-menu');
+    btn.addEventListener('click', () => menu.classList.toggle('nav-mobile--open'));
+  </script>
+</body>
+</html>

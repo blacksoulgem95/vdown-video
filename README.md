@@ -1,5 +1,13 @@
 # VDown Video
 
+> **Legal notice — Proof of Concept only**
+>
+> This software is a **proof of concept** built for educational and personal research purposes.
+> It is intended **solely for downloading content you own or have explicit permission to download** — for example, your own videos, content in the public domain, or material licensed under terms that permit downloading.
+>
+> Downloading copyrighted material without the rights holder's authorisation may violate copyright law, the terms of service of the relevant platform, and other applicable regulations in your jurisdiction.
+> The authors of this project accept no liability for any unlawful use. **You are solely responsible for ensuring your use complies with all applicable laws.**
+
 Self-hosted video downloader supporting YouTube, Instagram, TikTok, Facebook, Twitter/X, Vimeo, Reddit, and SoundCloud.
 
 Built with [Astro](https://astro.build) (SSR), SQLite, `yt-dlp`, and `gallery-dl`. Ships as a single Docker container.
@@ -97,3 +105,15 @@ kubectl apply -f k8s/
 | Transcoding | FFmpeg |
 | Styling | Tailwind CSS 4 |
 | Tests | Vitest |
+
+## License
+
+Copyright © 2024 **Sofia Vicedomini**
+
+This project is released under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
+You may use, copy, modify, and distribute this software under the terms of the GPL v3.
+There is **no warranty**, to the extent permitted by law.
+
+---
+
+<a href='https://ko-fi.com/Q5Q1AEQQK' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>

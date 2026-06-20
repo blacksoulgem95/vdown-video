@@ -1,0 +1,46 @@
+title: VDown Video — Docs
+description: Self-hosted video downloader for YouTube, Instagram, TikTok, and more.
+baseurl: ""
+url: ""
+
+# Build
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Exclude
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:name/
+
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"
+
+nav:
+  - title: Overview
+    url: /
+  - title: Local Development
+    url: /local-development/
+  - title: Configuration
+    url: /configuration/
+  - title: Architecture
+    url: /architecture/
