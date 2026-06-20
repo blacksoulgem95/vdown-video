@@ -14,8 +14,8 @@ Docker is the recommended way to run VDown locally. It installs all system depen
 
 ## Quick start
 
-<ol class="steps">
-<li>
+<ol class="steps" markdown="1">
+<li markdown="1">
 
 **Clone the repository**
 
@@ -25,7 +25,7 @@ cd yt-downloader
 ```
 
 </li>
-<li>
+<li markdown="1">
 
 **Copy the example environment file**
 
@@ -36,7 +36,7 @@ cp .env.example .env
 Open `.env` and fill in the required values. See the [Configuration reference](/configuration/) for details.
 
 </li>
-<li>
+<li markdown="1">
 
 **Start the dev server**
 
@@ -50,7 +50,7 @@ Docker will:
 - Start Astro in dev mode on port **4321**
 
 </li>
-<li>
+<li markdown="1">
 
 **Open the app**
 
