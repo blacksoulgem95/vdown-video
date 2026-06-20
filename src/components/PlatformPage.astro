@@ -1,0 +1,125 @@
+---
+import Base from '@/layouts/Base.astro';
+import UrlInput from '@/components/UrlInput.astro';
+import MetadataCard from '@/components/MetadataCard.astro';
+import FormatPicker from '@/components/FormatPicker.astro';
+import ProgressCard from '@/components/ProgressCard.astro';
+import DownloadList from '@/components/DownloadList.astro';
+import ErrorState from '@/components/ErrorState.astro';
+
+interface FAQ {
+  q: string;
+  a: string;
+}
+
+interface Props {
+  platform: string;
+  title: string;
+  description: string;
+  canonicalUrl: string;
+  heroHeadline: string;
+  heroSubline: string;
+  accentColor?: string;
+  audioOnly?: boolean;
+  initialUrl?: string;
+  faqs?: FAQ[];
+  seoBody?: string;
+}
+
+const {
+  platform,
+  title,
+  description,
+  canonicalUrl,
+  heroHeadline,
+  heroSubline,
+  audioOnly = false,
+  initialUrl = '',
+  faqs = [],
+  seoBody = '',
+} = Astro.props;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: `VDown Video — ${platform} Downloader`,
+  description,
+  applicationCategory: 'MultimediaApplication',
+  operatingSystem: 'Web',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  url: canonicalUrl,
+};
+
+const faqJsonLd = faqs.length > 0 ? {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+} : undefined;
+---
+
+<Base title={title} description={description} canonicalUrl={canonicalUrl} jsonLd={jsonLd}>
+  {faqJsonLd && <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} slot="head" />}
+
+  <!-- Hero -->
+  <section class="py-12 px-4">
+    <div class="max-w-2xl mx-auto text-center mb-8">
+      <h1 class="text-3xl sm:text-4xl font-bold mb-3 text-glow" style="color: var(--color-neon-purple-bright);">
+        {heroHeadline}
+      </h1>
+      <p class="text-base" style="color: var(--color-text-secondary);">{heroSubline}</p>
+    </div>
+
+    <!-- Download flow -->
+    <div class="max-w-2xl mx-auto flex flex-col gap-4">
+      <UrlInput initialUrl={initialUrl} />
+      <MetadataCard />
+      <FormatPicker audioOnly={audioOnly} />
+      <ProgressCard />
+      <DownloadList />
+      <ErrorState />
+    </div>
+  </section>
+
+  <!-- SEO copy -->
+  {seoBody && (
+    <section class="max-w-2xl mx-auto px-4 pb-12">
+      <div
+        class="prose prose-invert max-w-none text-sm leading-relaxed"
+        style="color: var(--color-text-secondary);"
+        set:html={seoBody}
+      />
+    </section>
+  )}
+
+  <!-- FAQ -->
+  {faqs.length > 0 && (
+    <section class="max-w-2xl mx-auto px-4 pb-16">
+      <h2 class="text-lg font-semibold mb-6" style="color: var(--color-text-primary); font-family: var(--font-mono);">
+        FREQUENTLY ASKED QUESTIONS
+      </h2>
+      <div class="flex flex-col gap-4">
+        {faqs.map((faq) => (
+          <details
+            class="rounded-lg overflow-hidden group"
+            style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default);"
+          >
+            <summary
+              class="px-4 py-3 cursor-pointer text-sm font-medium list-none flex items-center justify-between gap-2"
+              style="color: var(--color-text-primary);"
+            >
+              {faq.q}
+              <span class="flex-shrink-0 text-xs" style="color: var(--color-neon-purple);">▼</span>
+            </summary>
+            <div class="px-4 pb-4 text-sm" style="color: var(--color-text-secondary);">
+              {faq.a}
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  )}
+</Base>

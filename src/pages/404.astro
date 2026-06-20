@@ -1,0 +1,31 @@
+---
+import '@/styles/global.css';
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <title>404 — Page Not Found | VDown Video</title>
+  </head>
+  <body class="bg-grid scanlines min-h-screen flex flex-col" style="background-color: var(--color-bg-base); color: var(--color-text-primary);">
+    <main class="flex-1 flex items-center justify-center px-4">
+      <div class="text-center flex flex-col items-center gap-6">
+        <p style="font-family: var(--font-mono); font-size: 5rem; font-weight: 700; color: var(--color-neon-purple-bright); line-height: 1;" class="glitch">404</p>
+        <h1 style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--color-text-primary);">PAGE NOT FOUND</h1>
+        <p style="color: var(--color-text-secondary); max-width: 400px;">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
+        <a
+          href="/"
+          class="px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 glow-purple"
+          style="background-color: var(--color-neon-purple); color: #fff; font-family: var(--font-mono); letter-spacing: 0.05em; text-decoration: none;"
+        >
+          → GO HOME
+        </a>
+      </div>
+    </main>
+  </body>
+</html>

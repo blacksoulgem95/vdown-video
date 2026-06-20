@@ -1,0 +1,75 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import ArticleForm from '@/components/ArticleForm.astro';
+import db from '@/lib/db';
+import { saveCmsImage } from '@/lib/cms-images';
+
+let error = '';
+let formValues: Record<string, string> = {};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const slug = String(form.get('slug') ?? '').trim();
+  const title = String(form.get('title') ?? '').trim();
+  let heroImageUrl = String(form.get('hero_image_url') ?? '').trim();
+
+  formValues = {
+    slug,
+    title,
+    excerpt: String(form.get('excerpt') ?? ''),
+    meta_description: String(form.get('meta_description') ?? ''),
+    hero_image_url: heroImageUrl,
+    content_html: String(form.get('content_html') ?? ''),
+    seed_keyword: String(form.get('seed_keyword') ?? ''),
+  };
+
+  const imageFile = form.get('hero_image_file');
+  if (imageFile instanceof File && imageFile.size > 0) {
+    try {
+      const result = await saveCmsImage(imageFile);
+      heroImageUrl = result.url;
+      formValues['hero_image_url'] = heroImageUrl;
+    } catch (e: unknown) {
+      error = `Image upload failed: ${(e as Error).message}`;
+    }
+  }
+
+  if (!error) {
+    if (!slug || !title) {
+      error = 'Title and slug are required.';
+    } else if (!/^[a-z0-9-]+$/.test(slug)) {
+      error = 'Slug must be lowercase letters, numbers, and hyphens only.';
+    } else {
+      try {
+        db.prepare(
+          `INSERT INTO articles
+             (slug, title, excerpt, meta_description, hero_image_url, content_html, seed_keyword, published_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, unixepoch(), unixepoch())`,
+        ).run(
+          slug, title,
+          formValues['excerpt'] || null,
+          formValues['meta_description'] || null,
+          heroImageUrl || null,
+          formValues['content_html'] || null,
+          formValues['seed_keyword'] || null,
+        );
+        return Astro.redirect(`/admin/blog?flash=Article+%22${encodeURIComponent(title)}%22+created.`);
+      } catch (e: unknown) {
+        error = (e as Error).message.includes('UNIQUE') ? `Slug "${slug}" already exists.` : 'Database error.';
+      }
+    }
+  }
+}
+---
+
+<Admin title="New Article">
+  <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+    <a href="/admin/blog" style="color: var(--color-text-muted); font-family: var(--font-mono); font-size: 0.75rem; text-decoration: none;">← BLOG CMS</a>
+    <span style="color: var(--color-border-default);">/</span>
+    <h1 style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-neon-purple-bright);">NEW ARTICLE</h1>
+  </div>
+
+  <div style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: 10px; padding: 1.5rem;">
+    <ArticleForm action="/admin/blog/new" submitLabel="CREATE ARTICLE →" values={formValues} error={error} />
+  </div>
+</Admin>

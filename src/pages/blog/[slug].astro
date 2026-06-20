@@ -1,0 +1,163 @@
+---
+import Base from '@/layouts/Base.astro';
+import db from '@/lib/db';
+
+const { slug } = Astro.params;
+
+interface ArticleRow {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content_html: string | null;
+  meta_description: string | null;
+  hero_image_url: string | null;
+  json_ld: string | null;
+  faq_json_ld: string | null;
+  language_code: string;
+  published_at: number | null;
+}
+
+const article = db
+  .prepare('SELECT * FROM articles WHERE slug = ? LIMIT 1')
+  .get(slug) as ArticleRow | undefined;
+
+if (!article) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+const canonical = `https://vdown.video/blog/${article.slug}`;
+const publishedDate = article.published_at
+  ? new Date(article.published_at * 1000).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    })
+  : null;
+
+const jsonLd = article.json_ld ? JSON.parse(article.json_ld) as Record<string, unknown> : undefined;
+const faqJsonLd = article.faq_json_ld ? JSON.parse(article.faq_json_ld) as Record<string, unknown> : undefined;
+---
+
+<Base
+  title={`${article.title} | VDown Video Blog`}
+  description={article.meta_description ?? article.excerpt ?? `${article.title} — VDown Video`}
+  canonicalUrl={canonical}
+  ogImage={article.hero_image_url ?? undefined}
+  jsonLd={jsonLd}
+>
+  {faqJsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} slot="head" />
+  )}
+
+  <!-- OG article tags -->
+  <meta property="og:type" content="article" slot="head" />
+  {article.published_at && (
+    <meta
+      property="article:published_time"
+      content={new Date(article.published_at * 1000).toISOString()}
+      slot="head"
+    />
+  )}
+
+  <article class="max-w-3xl mx-auto px-4 py-12" lang={article.language_code}>
+    <!-- Hero image -->
+    {article.hero_image_url && (
+      <img
+        src={article.hero_image_url}
+        alt={article.title}
+        class="w-full rounded-xl object-cover mb-8"
+        style="max-height: 400px; background-color: var(--color-bg-elevated);"
+      />
+    )}
+
+    <!-- Header -->
+    <header class="mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold leading-snug mb-3" style="color: var(--color-text-primary);">
+        {article.title}
+      </h1>
+      {publishedDate && (
+        <p class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-mono);">
+          {publishedDate}
+        </p>
+      )}
+    </header>
+
+    <!-- Content -->
+    {article.content_html ? (
+      <div
+        class="prose prose-invert max-w-none text-sm leading-relaxed"
+        style="color: var(--color-text-secondary);"
+        set:html={article.content_html}
+      />
+    ) : (
+      <p class="text-sm" style="color: var(--color-text-muted);">No content available.</p>
+    )}
+
+    <!-- Back link -->
+    <div class="mt-12 pt-6" style="border-top: 1px solid var(--color-border-default);">
+      <a
+        href="/blog"
+        class="text-sm no-underline transition-colors"
+        style="color: var(--color-neon-purple); font-family: var(--font-mono);"
+      >
+        ← BACK TO BLOG
+      </a>
+    </div>
+  </article>
+</Base>
+
+<style>
+  /* Prose styles for BLG HTML content */
+  .prose h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-text-primary);
+    font-family: var(--font-mono);
+  }
+  .prose h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary);
+  }
+  .prose p { margin-bottom: 1rem; }
+  .prose ul, .prose ol {
+    margin-left: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .prose li { margin-bottom: 0.25rem; }
+  .prose a {
+    color: var(--color-neon-purple-bright);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background-color: var(--color-bg-elevated);
+    color: var(--color-neon-purple-bright);
+  }
+  .prose pre {
+    background-color: var(--color-bg-elevated);
+    border: 1px solid var(--color-border-default);
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+  .prose pre code {
+    background: none;
+    padding: 0;
+  }
+  .prose blockquote {
+    border-left: 3px solid var(--color-neon-purple);
+    padding-left: 1rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin-bottom: 1rem;
+  }
+  .prose strong { color: var(--color-text-primary); font-weight: 600; }
+</style>

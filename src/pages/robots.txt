@@ -1,0 +1,10 @@
+# VDown Video — Robots.txt
+User-agent: *
+Allow: /
+
+# Disallow admin and API paths from indexing
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://vdown.video/sitemap.xml

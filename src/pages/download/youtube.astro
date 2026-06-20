@@ -1,0 +1,55 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="YouTube"
+  title="YouTube Video Downloader — Download in 4K, 1080p, MP3 | VDown Video"
+  description="Download YouTube videos, Shorts, and playlists in 4K, 2K, 1080p, 720p, or MP3. Free, no signup, no software required."
+  canonicalUrl="https://vdown.video/download/youtube"
+  heroHeadline="YouTube Video Downloader"
+  heroSubline="Download videos, Shorts, and playlists in 4K, 1080p, 720p, or extract audio as MP3/AAC — instantly."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Can I download YouTube Shorts?',
+      a: 'Yes. Paste the Shorts URL (youtube.com/shorts/...) and it works like any other video. All qualities available.',
+    },
+    {
+      q: 'What video qualities are available?',
+      a: 'Up to 4K (2160p), 2K (1440p), 1080p, 720p, 480p, and 360p — depending on the original upload quality.',
+    },
+    {
+      q: 'Can I extract just the audio from a YouTube video?',
+      a: 'Yes. Select MP3, AAC, M4A, or OGG in the format picker and VDown converts and downloads the audio track only.',
+    },
+    {
+      q: 'Is there a download limit?',
+      a: 'Up to 10 downloads per hour per IP address. No daily cap. All free, no account needed.',
+    },
+    {
+      q: 'Can I download YouTube playlists?',
+      a: 'Paste a playlist URL and VDown fetches the first video with the option to pick quality. Full playlist batch support coming soon.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download YouTube Videos</h2>
+    <ol>
+      <li>Copy the YouTube video URL from your browser or the YouTube app.</li>
+      <li>Paste it into the field above and click <strong>ANALYSE URL</strong>.</li>
+      <li>A preview card shows the title, thumbnail, and duration. Confirm the video.</li>
+      <li>Choose your preferred quality (4K through 360p) or pick an audio-only format.</li>
+      <li>Click <strong>START DOWNLOAD</strong> — VDown fetches and prepares your file.</li>
+      <li>When ready, click <strong>DOWNLOAD</strong> on your chosen quality card.</li>
+    </ol>
+    <h2>Supported YouTube URL Formats</h2>
+    <ul>
+      <li>Standard videos: <code>youtube.com/watch?v=...</code></li>
+      <li>Shorts: <code>youtube.com/shorts/...</code></li>
+      <li>Shared short links: <code>youtu.be/...</code></li>
+      <li>Playlists: <code>youtube.com/playlist?list=...</code></li>
+    </ul>
+  `}
+/>

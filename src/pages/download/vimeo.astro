@@ -1,0 +1,49 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="Vimeo"
+  title="Vimeo Video Downloader — Download HD & 4K Videos | VDown Video"
+  description="Download Vimeo videos in HD, 4K, and more. No watermarks. No signup. Free."
+  canonicalUrl="https://vdown.video/download/vimeo"
+  heroHeadline="Vimeo Video Downloader"
+  heroSubline="Download Vimeo videos in HD, 2K, and 4K — clean, watermark-free, direct to your device."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Can I download private Vimeo videos?',
+      a: 'VDown only accesses publicly available content. Password-protected or fully private Vimeo videos cannot be downloaded.',
+    },
+    {
+      q: 'What formats can I download from Vimeo?',
+      a: 'MP4 is the default. Advanced options let you choose WebM or MKV. Audio can be extracted as MP3, AAC, M4A, or OGG.',
+    },
+    {
+      q: 'Does Vimeo support 4K downloads?',
+      a: 'Yes, when the original upload is 4K (2160p), VDown can fetch it at full resolution.',
+    },
+    {
+      q: 'Do I need a Vimeo account?',
+      a: 'No. VDown downloads public Vimeo content directly — no account or login required.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download Vimeo Videos</h2>
+    <ol>
+      <li>Copy the video URL from Vimeo (e.g. <code>vimeo.com/123456789</code>).</li>
+      <li>Paste it into the field above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Confirm the metadata preview, then pick your quality.</li>
+      <li>Hit <strong>START DOWNLOAD</strong> and wait for the file to be prepared.</li>
+      <li>Click <strong>DOWNLOAD</strong> to save the file.</li>
+    </ol>
+    <h2>Supported Vimeo URL Formats</h2>
+    <ul>
+      <li>Standard: <code>vimeo.com/123456789</code></li>
+      <li>Channel/showcase videos: <code>vimeo.com/channels/.../.../</code></li>
+      <li>Player embeds: <code>player.vimeo.com/video/123456789</code></li>
+    </ul>
+  `}
+/>

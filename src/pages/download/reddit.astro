@@ -1,0 +1,50 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="Reddit"
+  title="Reddit Video Downloader — Download Reddit Videos & GIFs | VDown Video"
+  description="Download Reddit videos and GIFs with audio in MP4. Free, no signup. Works with v.redd.it and old.reddit.com links."
+  canonicalUrl="https://vdown.video/download/reddit"
+  heroHeadline="Reddit Video Downloader"
+  heroSubline="Download Reddit videos and GIFs with audio — no separate audio merge needed, instant MP4."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Why do Reddit videos downloaded elsewhere have no audio?',
+      a: 'Reddit hosts video and audio as separate streams. VDown uses yt-dlp to merge them automatically into a single MP4 with audio.',
+    },
+    {
+      q: 'Does it work with v.redd.it short links?',
+      a: 'Yes. Both reddit.com post links and v.redd.it short links are supported.',
+    },
+    {
+      q: 'Can I download Reddit GIFs?',
+      a: 'Yes. Reddit GIFs are stored as MP4 loops internally — VDown downloads them with full audio if available.',
+    },
+    {
+      q: 'What about posts from old.reddit.com?',
+      a: 'Yes. old.reddit.com links work identically to www.reddit.com links.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download Reddit Videos</h2>
+    <ol>
+      <li>Find the Reddit post with the video you want to save.</li>
+      <li>Click <strong>Share → Copy link</strong> on the post.</li>
+      <li>Paste the link above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Choose quality — VDown automatically merges audio and video into one file.</li>
+      <li>Click <strong>START DOWNLOAD</strong> and save your MP4.</li>
+    </ol>
+    <h2>Supported Reddit URL Formats</h2>
+    <ul>
+      <li><code>reddit.com/r/subreddit/comments/abc123/...</code></li>
+      <li><code>www.reddit.com/r/.../</code></li>
+      <li><code>old.reddit.com/r/.../</code></li>
+      <li><code>v.redd.it/abc123</code></li>
+    </ul>
+  `}
+/>

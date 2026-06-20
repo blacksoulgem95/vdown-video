@@ -1,0 +1,217 @@
+---
+// State managed entirely via SSE + custom events
+---
+
+<div
+  id="progress-card"
+  class="hidden rounded-xl p-5 flex flex-col gap-4"
+  style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-neon);"
+  role="status"
+  aria-live="polite"
+>
+  <!-- Header row -->
+  <div class="flex items-center gap-3">
+    <!-- Pulsing dot -->
+    <span
+      id="progress-dot"
+      class="flex-shrink-0 w-2.5 h-2.5 rounded-full"
+      style="background-color: var(--color-neon-purple); animation: neon-pulse 1.2s ease-in-out infinite;"
+    ></span>
+    <span
+      id="progress-status-text"
+      class="text-sm font-medium"
+      style="color: var(--color-neon-purple-bright); font-family: var(--font-mono);"
+    >
+      INITIALISING…
+    </span>
+    <span
+      id="progress-percent"
+      class="ml-auto text-sm tabular-nums"
+      style="color: var(--color-text-secondary); font-family: var(--font-mono);"
+    >
+      0%
+    </span>
+  </div>
+
+  <!-- Progress bar track -->
+  <div
+    class="relative w-full h-2 rounded-full overflow-hidden"
+    style="background-color: var(--color-bg-elevated);"
+  >
+    <!-- Neon fill -->
+    <div
+      id="progress-bar"
+      class="h-full rounded-full transition-all duration-300"
+      style="
+        width: 0%;
+        background: linear-gradient(90deg, var(--color-neon-purple-dim), var(--color-neon-purple-bright));
+        box-shadow: 0 0 8px var(--color-neon-glow);
+      "
+    ></div>
+    <!-- Scanning line effect -->
+    <div
+      id="progress-scan"
+      class="absolute inset-0 opacity-30"
+      style="
+        background: linear-gradient(90deg, transparent 0%, var(--color-neon-purple-bright) 50%, transparent 100%);
+        animation: skeleton-shimmer 1.5s infinite;
+        background-size: 200% 100%;
+      "
+    ></div>
+  </div>
+
+  <!-- Job ID (monospace, for nerd cred) -->
+  <p id="progress-job-id" class="text-xs truncate" style="color: var(--color-text-muted); font-family: var(--font-mono);"></p>
+</div>
+
+<script>
+  interface SSEPayload {
+    type: 'status' | 'progress' | 'error' | 'done' | 'close';
+    status?: string;
+    progress?: number;
+    message?: string;
+    outputs?: unknown[];
+    sourceFilePath?: string;
+  }
+
+  const card = document.getElementById('progress-card') as HTMLDivElement;
+  const statusText = document.getElementById('progress-status-text') as HTMLSpanElement;
+  const percentEl = document.getElementById('progress-percent') as HTMLSpanElement;
+  const bar = document.getElementById('progress-bar') as HTMLDivElement;
+  const scan = document.getElementById('progress-scan') as HTMLDivElement;
+  const dot = document.getElementById('progress-dot') as HTMLSpanElement;
+  const jobIdEl = document.getElementById('progress-job-id') as HTMLParagraphElement;
+
+  let currentEventSource: EventSource | null = null;
+  let currentJobId: string | null = null;
+  let currentQuality: string | null = null;
+  let currentFormat: string | null = null;
+
+  const STATUS_LABELS: Record<string, string> = {
+    queued: 'QUEUED…',
+    fetching_meta: 'FETCHING METADATA…',
+    downloading: 'DOWNLOADING…',
+    transcoding: 'TRANSCODING…',
+    ready: 'COMPLETE',
+    error: 'ERROR',
+  };
+
+  function setProgress(pct: number): void {
+    bar.style.width = `${pct}%`;
+    percentEl.textContent = `${pct}%`;
+  }
+
+  function setStatus(status: string): void {
+    statusText.textContent = STATUS_LABELS[status] ?? status.toUpperCase();
+  }
+
+  function stopPulse(): void {
+    dot.style.animation = 'none';
+    scan.style.display = 'none';
+  }
+
+  function cleanup(): void {
+    currentEventSource?.close();
+    currentEventSource = null;
+  }
+
+  window.addEventListener('job-created', (e) => {
+    const detail = (e as CustomEvent<{ jobId: string; quality: string; format: string }>).detail;
+    currentJobId = detail.jobId;
+    currentQuality = detail.quality;
+    currentFormat = detail.format;
+
+    cleanup();
+    card.classList.remove('hidden');
+    setProgress(0);
+    setStatus('queued');
+    jobIdEl.textContent = `JOB: ${detail.jobId}`;
+
+    // Open SSE stream
+    const es = new EventSource(`/api/jobs/${detail.jobId}/sse`);
+    currentEventSource = es;
+
+    es.addEventListener('message', (ev) => {
+      let payload: SSEPayload;
+      try { payload = JSON.parse(ev.data as string) as SSEPayload; }
+      catch { return; }
+
+      if (payload.type === 'close') { cleanup(); return; }
+      if (payload.type === 'progress' && payload.progress !== undefined) {
+        setProgress(payload.progress);
+      }
+      if (payload.status) setStatus(payload.status);
+
+      if (payload.type === 'done' || payload.status === 'ready') {
+        setProgress(100);
+        stopPulse();
+        cleanup();
+        // Fetch final output list
+        void fetchOutputs(detail.jobId);
+      }
+
+      if (payload.type === 'error' || payload.status === 'error') {
+        stopPulse();
+        bar.style.background = 'var(--color-error)';
+        cleanup();
+        // Fetch correlation ID from job status
+        void fetchJobAndDispatchError(detail.jobId, payload.message);
+        card.classList.add('hidden');
+      }
+    });
+
+    es.addEventListener('error', () => {
+      // SSE connection dropped — poll job status once
+      cleanup();
+      void pollJobStatus(detail.jobId);
+    });
+  });
+
+  async function fetchOutputs(jobId: string): Promise<void> {
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      const data = await res.json() as { outputs?: unknown[] };
+      window.dispatchEvent(new CustomEvent('download-ready', {
+        detail: { jobId, outputs: data.outputs ?? [], quality: currentQuality, format: currentFormat },
+      }));
+      card.classList.add('hidden');
+    } catch {
+      // ignore
+    }
+  }
+
+  async function fetchJobAndDispatchError(jobId: string, message: string | undefined): Promise<void> {
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      const data = await res.json() as { correlation_id?: string };
+      window.dispatchEvent(new CustomEvent('download-error', {
+        detail: { message: message ?? 'Download failed.', correlationId: data.correlation_id },
+      }));
+    } catch {
+      window.dispatchEvent(new CustomEvent('download-error', {
+        detail: { message: message ?? 'Download failed.' },
+      }));
+    }
+  }
+
+  async function pollJobStatus(jobId: string): Promise<void> {
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      const data = await res.json() as { status?: string; outputs?: unknown[] };
+      if (data.status === 'ready') {
+        window.dispatchEvent(new CustomEvent('download-ready', {
+          detail: { jobId, outputs: data.outputs ?? [], quality: currentQuality, format: currentFormat },
+        }));
+        card.classList.add('hidden');
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Reset on retry
+  window.addEventListener('retry', () => {
+    cleanup();
+    card.classList.add('hidden');
+    setProgress(0);
+    bar.style.background = 'linear-gradient(90deg, var(--color-neon-purple-dim), var(--color-neon-purple-bright))';
+  });
+</script>

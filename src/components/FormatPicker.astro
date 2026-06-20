@@ -1,0 +1,219 @@
+---
+interface Props {
+  audioOnly?: boolean;
+}
+const { audioOnly = false } = Astro.props;
+---
+
+<div
+  id="format-picker"
+  class="hidden rounded-xl p-5 flex flex-col gap-5"
+  style="background-color: var(--color-bg-surface); border: 1px solid var(--color-neon);"
+  data-audio-only={audioOnly ? 'true' : 'false'}
+>
+  <!-- Video quality section -->
+  {!audioOnly && (
+    <div id="video-quality-section">
+      <p class="text-xs mb-3 uppercase tracking-widest" style="color: var(--color-text-muted); font-family: var(--font-mono);">Video Quality</p>
+      <div class="flex flex-wrap gap-2" role="group" aria-label="Video quality">
+        {(['4k', '2k', '1080p', '720p', '480p', '360p'] as const).map((q) => (
+          <button
+            type="button"
+            class="quality-btn px-3 py-1.5 rounded text-sm transition-all duration-150"
+            data-quality={q}
+            style="
+              background-color: var(--color-bg-elevated);
+              color: var(--color-text-secondary);
+              border: 1px solid var(--color-border-default);
+              font-family: var(--font-mono);
+            "
+          >
+            {q.toUpperCase()}
+          </button>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <!-- Audio section -->
+  <div>
+    <p class="text-xs mb-3 uppercase tracking-widest" style="color: var(--color-text-muted); font-family: var(--font-mono);">Audio</p>
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Audio format">
+      {(['mp3', 'aac', 'm4a', 'ogg'] as const).map((fmt) => (
+        <button
+          type="button"
+          class="audio-btn px-3 py-1.5 rounded text-sm transition-all duration-150"
+          data-format={fmt}
+          data-quality="audio"
+          style="
+            background-color: var(--color-bg-elevated);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border-default);
+            font-family: var(--font-mono);
+          "
+        >
+          {fmt.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- Advanced toggle -->
+  <div>
+    <button
+      id="advanced-toggle"
+      type="button"
+      class="text-xs underline-offset-2 underline transition-colors"
+      style="color: var(--color-text-muted); font-family: var(--font-mono);"
+    >
+      + Advanced options
+    </button>
+
+    <div id="advanced-panel" class="hidden mt-3 flex flex-col gap-3">
+      <div class="flex flex-wrap gap-4 text-sm">
+        <div>
+          <label class="text-xs block mb-1" style="color: var(--color-text-muted); font-family: var(--font-mono);">Container</label>
+          <select
+            id="container-select"
+            class="px-2 py-1 rounded"
+            style="
+              background-color: var(--color-bg-elevated);
+              color: var(--color-text-primary);
+              border: 1px solid var(--color-border-default);
+              font-family: var(--font-mono);
+              font-size: 0.75rem;
+            "
+          >
+            <option value="mp4">MP4</option>
+            <option value="webm">WebM</option>
+            <option value="mkv">MKV</option>
+          </select>
+        </div>
+
+        <div id="filesize-estimate" class="flex flex-col justify-end">
+          <span class="text-xs" style="color: var(--color-text-muted); font-family: var(--font-mono);">Est. size</span>
+          <span id="filesize-value" class="text-sm" style="color: var(--color-neon-purple-bright); font-family: var(--font-mono);">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <p
+    id="format-error"
+    class="hidden text-sm"
+    style="color: var(--color-error); font-family: var(--font-mono);"
+    role="alert"
+  ></p>
+</div>
+
+<script>
+  const picker = document.getElementById('format-picker') as HTMLDivElement;
+  const advancedToggle = document.getElementById('advanced-toggle') as HTMLButtonElement;
+  const advancedPanel = document.getElementById('advanced-panel') as HTMLDivElement;
+  const containerSelect = document.getElementById('container-select') as HTMLSelectElement;
+  const formatError = document.getElementById('format-error') as HTMLParagraphElement;
+  const audioOnly = picker.dataset['audioOnly'] === 'true';
+
+  let selectedQuality: string | null = null;
+  let selectedFormat: string | null = null;
+  let currentUrl: string | null = null;
+  let currentJobId: string | null = null;
+
+  // Restore last preferences from localStorage
+  const savedQuality = localStorage.getItem('vdown_quality');
+  const savedFormat = localStorage.getItem('vdown_format');
+
+  async function createJobAndTranscode(quality: string, format: string): Promise<void> {
+    if (!currentUrl) return;
+
+    formatError.classList.add('hidden');
+    picker.style.pointerEvents = 'none';
+    picker.style.opacity = '0.5';
+
+    try {
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: currentUrl, quality, format }),
+      });
+      const data = await res.json() as { jobId?: string; error?: string };
+
+      if (!res.ok || !data.jobId) {
+        formatError.textContent = data.error ?? 'Failed to queue download.';
+        formatError.classList.remove('hidden');
+        return;
+      }
+
+      currentJobId = data.jobId;
+
+      // Hide picker and show progress/download list
+      picker.classList.add('hidden');
+
+      // Dispatch event to show progress and download list with processing state
+      window.dispatchEvent(new CustomEvent('job-created', {
+        detail: { jobId: data.jobId, quality, format },
+      }));
+
+      // Save preference
+      localStorage.setItem('vdown_quality', quality);
+      localStorage.setItem('vdown_format', format);
+    } catch {
+      formatError.textContent = 'Network error. Try again.';
+      formatError.classList.remove('hidden');
+    } finally {
+      picker.style.pointerEvents = 'auto';
+      picker.style.opacity = '1';
+    }
+  }
+
+  function selectQuality(quality: string, format?: string): void {
+    selectedQuality = quality;
+    selectedFormat = format ?? (quality === 'audio' ? (savedFormat ?? 'mp3') : (containerSelect.value ?? 'mp4'));
+
+    // Update button states
+    document.querySelectorAll<HTMLButtonElement>('.quality-btn, .audio-btn').forEach((btn) => {
+      const isSelected = btn.dataset['quality'] === quality && (!format || btn.dataset['format'] === format);
+      btn.style.backgroundColor = isSelected ? 'var(--color-neon-purple)' : 'var(--color-bg-elevated)';
+      btn.style.color = isSelected ? '#ffffff' : 'var(--color-text-secondary)';
+      btn.style.borderColor = isSelected ? 'var(--color-neon-purple)' : 'var(--color-border-default)';
+    });
+
+    // Create job and start transcoding immediately
+    void createJobAndTranscode(quality, selectedFormat);
+  }
+
+  // Wire quality buttons
+  document.querySelectorAll<HTMLButtonElement>('.quality-btn').forEach((btn) => {
+    btn.addEventListener('click', () => selectQuality(btn.dataset['quality']!));
+  });
+
+  // Wire audio buttons
+  document.querySelectorAll<HTMLButtonElement>('.audio-btn').forEach((btn) => {
+    btn.addEventListener('click', () => selectQuality('audio', btn.dataset['format']!));
+  });
+
+  // Advanced toggle
+  advancedToggle.addEventListener('click', () => {
+    const open = advancedPanel.classList.toggle('hidden') === false;
+    advancedToggle.textContent = open ? '− Advanced options' : '+ Advanced options';
+  });
+
+  // Show picker when confirmed from MetadataCard
+  window.addEventListener('show-format-picker', () => {
+    picker.classList.remove('hidden');
+    // Apply saved preferences but don't auto-trigger
+    if (audioOnly) {
+      selectQuality('audio', savedFormat ?? 'mp3');
+    } else if (savedQuality) {
+      selectQuality(savedQuality, savedFormat ?? undefined);
+    } else {
+      selectQuality('1080p');
+    }
+  });
+
+  // Capture URL from metadata-loaded event
+  window.addEventListener('metadata-loaded', (e) => {
+    currentUrl = (e as CustomEvent<{ url: string }>).detail.url;
+  });
+</script>

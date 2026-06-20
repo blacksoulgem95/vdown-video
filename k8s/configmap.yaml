@@ -1,0 +1,20 @@
+# ── ConfigMap ─────────────────────────────────────────────────
+# Non-secret environment variables
+# ───────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vdown-config
+  labels:
+    app: vdown-video
+data:
+  PORT: "4321"
+  MAX_CONCURRENT: "3"
+  CACHE_TTL_DAYS: "7"
+  CACHE_MAX_GB: "20"
+  RATE_LIMIT_PER_IP_HOUR: "10"
+  RATE_LIMIT_QUEUE_DEPTH: "50"
+  DATABASE_PATH: "/app/data/sqlite/vdown.db"
+  CACHE_DIR: "/app/data/cache"
+  CMS_DIR: "/app/data/cms"
+  BASE_URL: "https://vdown.video"

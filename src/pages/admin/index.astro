@@ -1,0 +1,142 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import db from '@/lib/db';
+import { getDiskUsageGb } from '@/lib/eviction';
+import { getQueueDepth } from '@/lib/queue';
+
+const CACHE_MAX_GB = Number(process.env['CACHE_MAX_GB'] ?? 20);
+
+interface JobRow {
+  id: string;
+  url: string;
+  platform: string;
+  status: string;
+  created_at: number;
+}
+
+interface CountRow { total: number }
+
+const totalJobs = (db.prepare('SELECT COUNT(*) as total FROM jobs').get() as CountRow).total;
+const queueDepth = getQueueDepth();
+const diskGb = await getDiskUsageGb();
+
+const recentJobs = db
+  .prepare(
+    `SELECT id, url, platform, status, created_at
+     FROM jobs
+     ORDER BY created_at DESC
+     LIMIT 20`,
+  )
+  .all() as JobRow[];
+
+const STATUS_COLOR: Record<string, string> = {
+  ready: 'var(--color-success)',
+  error: 'var(--color-error)',
+  downloading: 'var(--color-neon-purple-bright)',
+  queued: 'var(--color-text-muted)',
+  fetching_meta: 'var(--color-neon-purple)',
+};
+---
+
+<Admin title="Dashboard">
+  <h1 style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--color-neon-purple-bright); margin-bottom: 1.5rem; letter-spacing: 0.05em;">
+    DASHBOARD
+  </h1>
+
+  <!-- Stats cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    {[
+      { label: 'TOTAL JOBS', value: totalJobs },
+      { label: 'QUEUE DEPTH', value: queueDepth },
+      { label: 'DISK USED', value: `${diskGb.toFixed(2)} / ${CACHE_MAX_GB} GB` },
+    ].map((stat) => (
+      <div style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-neon); border-radius: 10px; padding: 1.25rem;">
+        <p style="font-family: var(--font-mono); font-size: 0.65rem; color: var(--color-text-muted); letter-spacing: 0.1em; margin-bottom: 0.5rem;">{stat.label}</p>
+        <p style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; color: var(--color-neon-purple-bright);">{stat.value}</p>
+      </div>
+    ))}
+  </div>
+
+  <!-- Cache wipe -->
+  <div style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: 10px; padding: 1.25rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+    <div>
+      <p style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-text-primary); font-weight: 600;">Cache Eviction</p>
+      <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.25rem;">Run eviction now — deletes expired and oversized cache entries.</p>
+    </div>
+    <button
+      id="wipe-btn"
+      style="padding: 0.5rem 1.25rem; background-color: transparent; border: 1px solid var(--color-error); border-radius: 6px; color: var(--color-error); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap; letter-spacing: 0.05em;"
+    >
+      WIPE CACHE
+    </button>
+  </div>
+  <p id="wipe-result" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-neon-purple-bright); display: none; margin-bottom: 1.5rem;"></p>
+
+  <!-- Recent jobs table -->
+  <div style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: 10px; overflow: hidden;">
+    <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border-default);">
+      <p style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-text-primary); font-weight: 600;">RECENT JOBS (20)</p>
+    </div>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: var(--font-mono);">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--color-border-default);">
+            {['JOB ID', 'URL', 'PLATFORM', 'STATUS', 'CREATED'].map((h) => (
+              <th style="text-align: left; padding: 0.6rem 1rem; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; white-space: nowrap;">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {recentJobs.length === 0 && (
+            <tr>
+              <td colspan="5" style="padding: 1.5rem 1rem; color: var(--color-text-muted); text-align: center;">No jobs yet.</td>
+            </tr>
+          )}
+          {recentJobs.map((job, i) => (
+            <tr style={`border-bottom: 1px solid var(--color-border-default); background-color: ${i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)'};`}>
+              <td style="padding: 0.6rem 1rem; color: var(--color-text-muted);">{job.id.slice(0, 8)}…</td>
+              <td style="padding: 0.6rem 1rem; color: var(--color-text-secondary); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title={job.url}>
+                {job.url.length > 50 ? job.url.slice(0, 50) + '…' : job.url}
+              </td>
+              <td style="padding: 0.6rem 1rem; color: var(--color-neon-purple);">{job.platform}</td>
+              <td style={`padding: 0.6rem 1rem; color: ${STATUS_COLOR[job.status] ?? 'var(--color-text-secondary)'};`}>{job.status}</td>
+              <td style="padding: 0.6rem 1rem; color: var(--color-text-muted); white-space: nowrap;">
+                {new Date(job.created_at * 1000).toISOString().slice(0, 16).replace('T', ' ')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Admin>
+
+<script>
+  const wipeBtn = document.getElementById('wipe-btn') as HTMLButtonElement;
+  const wipeResult = document.getElementById('wipe-result') as HTMLParagraphElement;
+
+  wipeBtn.addEventListener('click', async () => {
+    wipeBtn.disabled = true;
+    wipeBtn.textContent = 'WIPING…';
+    try {
+      const res = await fetch('/api/admin/cache-wipe', { method: 'POST' });
+      const data = await res.json() as { jobsDeleted?: number; bytesFreed?: number; error?: string };
+      if (res.ok) {
+        const mb = ((data.bytesFreed ?? 0) / 1024 / 1024).toFixed(1);
+        wipeResult.textContent = `✓ Evicted ${data.jobsDeleted ?? 0} jobs, freed ${mb} MB.`;
+        wipeResult.style.display = 'block';
+      } else {
+        wipeResult.textContent = `✗ ${data.error ?? 'Wipe failed.'}`;
+        wipeResult.style.color = 'var(--color-error)';
+        wipeResult.style.display = 'block';
+      }
+    } catch {
+      wipeResult.textContent = '✗ Network error.';
+      wipeResult.style.color = 'var(--color-error)';
+      wipeResult.style.display = 'block';
+    } finally {
+      wipeBtn.disabled = false;
+      wipeBtn.textContent = 'WIPE CACHE';
+    }
+  });
+</script>

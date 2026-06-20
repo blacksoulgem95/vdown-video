@@ -1,0 +1,30 @@
+# VDown Video — Local Development
+# Usage:
+#   cp .env.example .env
+#   docker compose -f compose.local.yml up --build
+#   → http://localhost:4321
+#
+# Hot reload: mounts src/ into container for astro dev --watch
+# Data persistence: ./data → /app/data (sqlite + cache + cms)
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4321:4321"
+    env_file:
+      - .env
+    volumes:
+      # Source code hot reload
+      - ./src:/app/src
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./astro.config.mjs:/app/astro.config.mjs
+      # Data persistence
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=development
+    command: sh -c "npm install && npm run dev -- --host"
+    restart: unless-stopped

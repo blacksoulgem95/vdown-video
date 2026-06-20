@@ -1,0 +1,16 @@
+# VDown Video — Production
+# docker compose up --build
+
+services:
+  app:
+    build: .
+    ports:
+      - "4321:4321"
+    env_file:
+      - .env
+    volumes:
+      # Single /data mount — three subdirs
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production

@@ -1,0 +1,37 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} — VDown Admin</title>
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body class="bg-grid scanlines min-h-screen flex flex-col" style="background-color: var(--color-bg-base); color: var(--color-text-primary);">
+    <!-- Admin nav -->
+    <nav style="background-color: var(--color-bg-surface); border-bottom: 1px solid var(--color-border-neon); position: sticky; top: 0; z-index: 50;">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 0 1rem; height: 3.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+          <a href="/admin" style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--color-neon-purple-bright); text-decoration: none;">
+            ⬡ VDOWN ADMIN
+          </a>
+          <a href="/admin" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted); text-decoration: none;">Dashboard</a>
+          <a href="/admin/blog" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-muted); text-decoration: none;">Blog CMS</a>
+        </div>
+        <a href="/admin/logout" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted); text-decoration: none; letter-spacing: 0.05em;">LOGOUT →</a>
+      </div>
+    </nav>
+
+    <main style="flex: 1; max-width: 1200px; margin: 0 auto; width: 100%; padding: 2rem 1rem;">
+      <slot />
+    </main>
+  </body>
+</html>

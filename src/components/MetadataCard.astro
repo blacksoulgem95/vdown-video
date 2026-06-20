@@ -1,0 +1,132 @@
+---
+// No server-side props — populated entirely via the metadata-loaded DOM event
+---
+
+<!-- Skeleton (visible while fetching metadata) -->
+<div
+  id="metadata-skeleton"
+  class="hidden rounded-xl overflow-hidden"
+  style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default);"
+  aria-busy="true"
+  aria-label="Loading video information"
+>
+  <div class="flex gap-4 p-4">
+    <!-- Thumbnail skeleton -->
+    <div class="skeleton rounded-lg flex-shrink-0" style="width: 160px; height: 90px;"></div>
+    <div class="flex flex-col gap-2 flex-1 py-1">
+      <div class="skeleton h-4 rounded w-3/4"></div>
+      <div class="skeleton h-4 rounded w-1/2"></div>
+      <div class="skeleton h-3 rounded w-1/4 mt-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Populated card (hidden until metadata arrives) -->
+<div
+  id="metadata-card"
+  class="hidden rounded-xl overflow-hidden"
+  style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-neon);"
+>
+  <div class="flex flex-col sm:flex-row gap-0">
+    <!-- Thumbnail -->
+    <div class="relative flex-shrink-0 sm:w-48">
+      <img
+        id="meta-thumbnail"
+        src=""
+        alt=""
+        class="w-full h-full object-cover"
+        style="max-height: 120px; background-color: var(--color-bg-elevated);"
+      />
+      <!-- Duration badge -->
+      <span
+        id="meta-duration"
+        class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-xs"
+        style="
+          background-color: rgba(0,0,0,0.8);
+          color: #ffffff;
+          font-family: var(--font-mono);
+        "
+      ></span>
+    </div>
+
+    <!-- Info -->
+    <div class="flex flex-col justify-between p-4 flex-1 gap-3">
+      <div>
+        <p id="meta-title" class="font-semibold leading-snug line-clamp-2" style="color: var(--color-text-primary);"></p>
+        <p id="meta-author" class="text-sm mt-1" style="color: var(--color-text-secondary); font-family: var(--font-mono);"></p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span
+          id="meta-platform-badge"
+          class="text-xs px-2 py-0.5 rounded"
+          style="
+            background-color: var(--color-bg-overlay);
+            color: var(--color-neon-purple-bright);
+            border: 1px solid var(--color-border-neon);
+            font-family: var(--font-mono);
+          "
+        ></span>
+
+        <button
+          id="meta-confirm"
+          class="ml-auto px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 glow-purple"
+          style="
+            background-color: var(--color-neon-purple);
+            color: #ffffff;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+          "
+        >
+          SELECT FORMAT →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const skeleton = document.getElementById('metadata-skeleton') as HTMLDivElement;
+  const card = document.getElementById('metadata-card') as HTMLDivElement;
+  const thumbnail = document.getElementById('meta-thumbnail') as HTMLImageElement;
+  const duration = document.getElementById('meta-duration') as HTMLSpanElement;
+  const title = document.getElementById('meta-title') as HTMLParagraphElement;
+  const author = document.getElementById('meta-author') as HTMLParagraphElement;
+  const platformBadge = document.getElementById('meta-platform-badge') as HTMLSpanElement;
+  const confirmBtn = document.getElementById('meta-confirm') as HTMLButtonElement;
+
+  function formatDuration(secs: number): string {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  // Show skeleton when URL analysis starts
+  window.addEventListener('url-analysing', () => {
+    card.classList.add('hidden');
+    skeleton.classList.remove('hidden');
+  });
+
+  // Populate card on metadata-loaded
+  window.addEventListener('metadata-loaded', (e) => {
+    const detail = (e as CustomEvent<Record<string, unknown>>).detail;
+
+    skeleton.classList.add('hidden');
+
+    thumbnail.src = (detail['thumbnail'] as string) ?? '';
+    thumbnail.alt = (detail['title'] as string) ?? '';
+    title.textContent = (detail['title'] as string) ?? 'Unknown title';
+    author.textContent = (detail['author'] as string) ?? '';
+    duration.textContent = formatDuration(Number(detail['duration'] ?? 0));
+    platformBadge.textContent = ((detail['platform'] as string) ?? 'unknown').toUpperCase();
+
+    card.classList.remove('hidden');
+  });
+
+  // Confirm → emit show-format-picker
+  confirmBtn.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('show-format-picker'));
+  });
+</script>

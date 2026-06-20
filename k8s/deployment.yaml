@@ -1,0 +1,69 @@
+# ── Deployment ─────────────────────────────────────────────────
+# VDown Video — 1 replica (SQLite constraint)
+# ───────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vdown-video
+  labels:
+    app: vdown-video
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vdown-video
+  template:
+    metadata:
+      labels:
+        app: vdown-video
+    spec:
+      containers:
+        - name: vdown-video
+          image: vdown-video:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4321
+              name: http
+          envFrom:
+            - configMapRef:
+                name: vdown-config
+            - secretRef:
+                name: vdown-secret
+          volumeMounts:
+            - name: cache-vol
+              mountPath: /app/data/cache
+            - name: data-vol
+              mountPath: /app/data/sqlite
+            - name: data-vol
+              mountPath: /app/data/cms
+              subPath: cms
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4321
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4321
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: cache-vol
+          persistentVolumeClaim:
+            claimName: cache-pvc
+        - name: data-vol
+          persistentVolumeClaim:
+            claimName: data-pvc

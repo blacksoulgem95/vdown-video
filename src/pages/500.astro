@@ -1,0 +1,31 @@
+---
+import '@/styles/global.css';
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0f" />
+    <title>500 — Server Error | VDown Video</title>
+  </head>
+  <body class="bg-grid scanlines min-h-screen flex flex-col" style="background-color: var(--color-bg-base); color: var(--color-text-primary);">
+    <main class="flex-1 flex items-center justify-center px-4">
+      <div class="text-center flex flex-col items-center gap-6">
+        <p style="font-family: var(--font-mono); font-size: 5rem; font-weight: 700; color: var(--color-error); line-height: 1;" class="glitch">500</p>
+        <h1 style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--color-text-primary);">SERVER ERROR</h1>
+        <p style="color: var(--color-text-secondary); max-width: 400px;">
+          Something went wrong on our end. We're working on it — try again in a moment.
+        </p>
+        <a
+          href="/"
+          class="px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200"
+          style="background-color: transparent; color: var(--color-error); border: 1px solid var(--color-error); font-family: var(--font-mono); letter-spacing: 0.05em; text-decoration: none;"
+        >
+          → GO HOME
+        </a>
+      </div>
+    </main>
+  </body>
+</html>

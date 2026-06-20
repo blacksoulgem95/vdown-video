@@ -1,0 +1,116 @@
+---
+import Base from '@/layouts/Base.astro';
+import UrlInput from '@/components/UrlInput.astro';
+import MetadataCard from '@/components/MetadataCard.astro';
+import FormatPicker from '@/components/FormatPicker.astro';
+import ProgressCard from '@/components/ProgressCard.astro';
+import DownloadList from '@/components/DownloadList.astro';
+import ErrorState from '@/components/ErrorState.astro';
+
+const PLATFORM_MAP: Record<string, string> = {
+  'youtube.com': 'youtube', 'www.youtube.com': 'youtube', 'm.youtube.com': 'youtube', 'youtu.be': 'youtube',
+  'vimeo.com': 'vimeo', 'www.vimeo.com': 'vimeo', 'player.vimeo.com': 'vimeo',
+  'facebook.com': 'facebook', 'www.facebook.com': 'facebook', 'm.facebook.com': 'facebook', 'fb.watch': 'facebook', 'fb.com': 'facebook',
+  'instagram.com': 'instagram', 'www.instagram.com': 'instagram',
+  'tiktok.com': 'tiktok', 'www.tiktok.com': 'tiktok', 'vm.tiktok.com': 'tiktok',
+  'twitter.com': 'twitter', 'www.twitter.com': 'twitter', 'x.com': 'twitter', 'www.x.com': 'twitter',
+  'reddit.com': 'reddit', 'www.reddit.com': 'reddit', 'old.reddit.com': 'reddit', 'v.redd.it': 'reddit',
+  'soundcloud.com': 'soundcloud', 'www.soundcloud.com': 'soundcloud', 'on.soundcloud.com': 'soundcloud',
+};
+
+const PLATFORMS = [
+  { slug: 'youtube',    label: 'YouTube',     emoji: '▶', desc: 'Videos, Shorts, Playlists' },
+  { slug: 'instagram',  label: 'Instagram',   emoji: '◈', desc: 'Reels, Stories, Photos' },
+  { slug: 'tiktok',     label: 'TikTok',      emoji: '♪', desc: 'Videos without watermark' },
+  { slug: 'facebook',   label: 'Facebook',    emoji: '⬡', desc: 'Videos, Reels, Photos' },
+  { slug: 'twitter',    label: 'Twitter / X', emoji: '✦', desc: 'Videos & GIFs' },
+  { slug: 'vimeo',      label: 'Vimeo',       emoji: '◉', desc: 'HD & 4K Videos' },
+  { slug: 'reddit',     label: 'Reddit',      emoji: '◆', desc: 'Video posts & GIFs' },
+  { slug: 'soundcloud', label: 'SoundCloud',  emoji: '♬', desc: 'Audio tracks & mixes' },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'VDown Video',
+  description: 'Download videos from YouTube, Instagram, TikTok, Facebook, Twitter, Vimeo, Reddit, and SoundCloud. Free. No signup.',
+  url: 'https://vdown.video',
+};
+---
+
+<Base
+  title="VDown Video — Download Videos from Any Platform"
+  description="Download videos from YouTube, Instagram, TikTok, Facebook, Twitter, Vimeo, Reddit, and SoundCloud. Free, fast, no signup required."
+  canonicalUrl="https://vdown.video"
+  jsonLd={jsonLd}
+>
+  <!-- Hero -->
+  <section class="pt-16 pb-10 px-4 text-center">
+    <h1 class="text-4xl sm:text-5xl font-bold mb-4 text-glow" style="color: var(--color-neon-purple-bright);">
+      Download Any Video.<br />
+      <span style="color: var(--color-text-primary);">No Signup. No Limits.</span>
+    </h1>
+    <p class="text-base max-w-xl mx-auto mb-10" style="color: var(--color-text-secondary);">
+      Paste a URL from YouTube, Instagram, TikTok, Facebook, Twitter, Vimeo, Reddit, or SoundCloud — VDown handles the rest.
+    </p>
+
+    <!-- Download flow -->
+    <div class="max-w-2xl mx-auto flex flex-col gap-4 text-left">
+      <UrlInput placeholder="Paste any video URL — YouTube, TikTok, Instagram…" />
+      <MetadataCard />
+      <FormatPicker />
+      <ProgressCard />
+      <DownloadList />
+      <ErrorState />
+    </div>
+  </section>
+
+  <!-- Platform grid -->
+  <section class="max-w-4xl mx-auto px-4 pb-16">
+    <p class="text-xs text-center mb-6 uppercase tracking-widest" style="color: var(--color-text-muted); font-family: var(--font-mono);">
+      Supported Platforms
+    </p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {PLATFORMS.map((p) => (
+        <a
+          href={`/download/${p.slug}`}
+          class="platform-card rounded-xl p-4 flex flex-col gap-2 no-underline transition-all duration-200"
+          style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default);"
+        >
+          <span class="text-2xl">{p.emoji}</span>
+          <span class="text-sm font-semibold" style="color: var(--color-text-primary);">{p.label}</span>
+          <span class="text-xs" style="color: var(--color-text-muted);">{p.desc}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .platform-card:hover {
+    border-color: var(--color-neon-purple) !important;
+    box-shadow: 0 0 16px var(--color-neon-glow);
+  }
+</style>
+
+<script define:vars={{ PLATFORM_MAP }}>
+  // Intercept metadata-loaded to redirect to platform page
+  window.addEventListener('metadata-loaded', (e) => {
+    const detail = e.detail;
+    const platform = detail.platform;
+    const url = detail.url;
+
+    // If recognised platform → redirect to platform page with ?url=
+    if (platform && platform !== 'unknown') {
+      const dest = `/download/${platform}?url=${encodeURIComponent(url)}`;
+      window.location.href = dest;
+    }
+    // Unknown platform → flow continues inline (no redirect)
+  }, { once: false });
+
+  // Override: listen for metadata-loaded and stop propagation if redirecting
+  // (UrlInput already dispatched the event — we need to prevent MetadataCard
+  //  from showing when we're about to redirect)
+  const origDispatch = window.dispatchEvent.bind(window);
+  // We can't easily cancel, so the redirect will simply happen before the card renders
+</script>

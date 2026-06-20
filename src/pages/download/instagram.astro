@@ -1,0 +1,54 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="Instagram"
+  title="Instagram Video Downloader — Download Reels, Stories & Videos | VDown Video"
+  description="Download Instagram Reels, Stories, and videos in HD. No login. No watermark. Free."
+  canonicalUrl="https://vdown.video/download/instagram"
+  heroHeadline="Instagram Video Downloader"
+  heroSubline="Download Instagram Reels, Stories, and videos — no login, no watermark, full quality."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Can I download Instagram Stories?',
+      a: 'Yes. Paste the Story URL and VDown uses gallery-dl to fetch it. Public profiles only.',
+    },
+    {
+      q: 'Can I download Instagram Reels without watermark?',
+      a: 'Yes. VDown fetches the original source video directly, no platform watermark is added.',
+    },
+    {
+      q: 'Do I need to log in to download Instagram content?',
+      a: 'No login required. VDown only accesses publicly available posts, Reels, and Stories.',
+    },
+    {
+      q: 'Can I download private Instagram posts?',
+      a: 'No. Only public content is accessible. Private account posts cannot be downloaded.',
+    },
+    {
+      q: 'What formats are available for Instagram downloads?',
+      a: 'Video as MP4 (up to 1080p), or audio extracted as MP3/AAC. Photos are downloaded as JPEG.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download Instagram Reels and Videos</h2>
+    <ol>
+      <li>Open Instagram and navigate to the Reel, video post, or Story you want.</li>
+      <li>Tap the three-dot menu → <strong>Copy link</strong> (or copy from the browser address bar).</li>
+      <li>Paste the link above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Confirm the preview and pick your quality or audio format.</li>
+      <li>Click <strong>START DOWNLOAD</strong> and save your file when ready.</li>
+    </ol>
+    <h2>Supported Instagram URL Formats</h2>
+    <ul>
+      <li>Posts: <code>instagram.com/p/...</code></li>
+      <li>Reels: <code>instagram.com/reel/...</code></li>
+      <li>Stories: <code>instagram.com/stories/username/...</code></li>
+      <li>TV: <code>instagram.com/tv/...</code></li>
+    </ul>
+  `}
+/>

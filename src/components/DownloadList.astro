@@ -1,0 +1,219 @@
+---
+interface Output {
+  id: string;
+  quality: string;
+  format: string;
+  fileSize: number | null;
+  downloadUrl: string;
+}
+
+interface Props {
+  outputs?: Output[];
+  jobId?: string;
+}
+
+const { outputs: initialOutputs, jobId: initialJobId } = Astro.props;
+---
+
+<div id="download-list-container" class="hidden">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-base font-semibold" style="color: var(--color-text-primary); font-family: var(--font-mono);">
+      DOWNLOADS
+    </h2>
+    <button
+      id="download-another-btn"
+      type="button"
+      class="text-xs underline-offset-2 underline"
+      style="color: var(--color-text-muted); font-family: var(--font-mono);"
+    >
+      Download another
+    </button>
+  </div>
+
+  <!-- Output grid -->
+  <div id="output-grid" class="grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+    {initialOutputs?.map((output) => (
+      <a
+        href={output.downloadUrl}
+        download
+        class="output-card rounded-lg p-4 flex flex-col gap-2 no-underline transition-all duration-200"
+        style="
+          background-color: var(--color-bg-elevated);
+          border: 1px solid var(--color-border-default);
+          color: var(--color-text-primary);
+        "
+        data-quality={output.quality}
+        data-format={output.format}
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-bold" style="font-family: var(--font-mono); color: var(--color-neon-purple-bright);">
+            {output.quality.toUpperCase()}
+          </span>
+          <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--color-bg-overlay); color: var(--color-text-muted); font-family: var(--font-mono);">
+            {output.format.toUpperCase()}
+          </span>
+        </div>
+        {output.fileSize !== null && (
+          <span class="text-xs" style="color: var(--color-text-secondary); font-family: var(--font-mono);">
+            {(output.fileSize / 1024 / 1024).toFixed(1)} MB
+          </span>
+        )}
+        <span
+          class="w-full text-center py-1.5 rounded text-xs font-semibold mt-auto"
+          style="
+            background-color: var(--color-neon-purple);
+            color: #ffffff;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+          "
+        >
+          DOWNLOAD
+        </span>
+      </a>
+    ))}
+  </div>
+
+  <!-- Processing state -->
+  <div id="processing-card" class="hidden rounded-lg p-4 flex items-center justify-center gap-3" style="background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-neon);">
+    <span class="w-3 h-3 rounded-full" style="background-color: var(--color-neon-purple); animation: neon-pulse 1.2s ease-in-out infinite;"></span>
+    <span class="text-sm" style="color: var(--color-neon-purple-bright); font-family: var(--font-mono);">
+      PROCESSING...
+    </span>
+  </div>
+</div>
+
+<style>
+  .output-card:hover {
+    border-color: var(--color-neon-purple) !important;
+    box-shadow: 0 0 12px var(--color-neon-glow);
+  }
+</style>
+
+<script>
+  interface Output {
+    id: string;
+    quality: string;
+    format: string;
+    fileSize: number | null;
+    downloadUrl: string;
+  }
+
+  const container = document.getElementById('download-list-container') as HTMLDivElement;
+  const grid = document.getElementById('output-grid') as HTMLDivElement;
+  const processingCard = document.getElementById('processing-card') as HTMLDivElement;
+  const anotherBtn = document.getElementById('download-another-btn') as HTMLButtonElement;
+
+  let currentJobId: string | null = null;
+  let currentQuality: string | null = null;
+  let currentFormat: string | null = null;
+  let pollInterval: number | null = null;
+
+  function formatSize(bytes: number | null): string {
+    if (bytes === null) return '';
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  function renderCard(output: Output): HTMLAnchorElement {
+    const a = document.createElement('a');
+    a.href = output.downloadUrl;
+    a.download = '';
+    a.className = 'output-card rounded-lg p-4 flex flex-col gap-2 no-underline transition-all duration-200';
+    a.style.cssText = 'background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-default); color: var(--color-text-primary);';
+    a.dataset['quality'] = output.quality;
+    a.dataset['format'] = output.format;
+
+    const size = formatSize(output.fileSize);
+    a.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-bold" style="font-family: var(--font-mono); color: var(--color-neon-purple-bright);">${output.quality.toUpperCase()}</span>
+        <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--color-bg-overlay); color: var(--color-text-muted); font-family: var(--font-mono);">${output.format.toUpperCase()}</span>
+      </div>
+      ${size ? `<span class="text-xs" style="color: var(--color-text-secondary); font-family: var(--font-mono);">${size}</span>` : ''}
+      <span class="w-full text-center py-1.5 rounded text-xs font-semibold mt-auto" style="background-color: var(--color-neon-purple); color: #ffffff; font-family: var(--font-mono); letter-spacing: 0.04em;">DOWNLOAD</span>
+    `;
+    return a;
+  }
+
+  function showProcessing(): void {
+    container.classList.remove('hidden');
+    grid.innerHTML = '';
+    grid.classList.add('hidden');
+    processingCard.classList.remove('hidden');
+  }
+
+  function showOutputs(outputs: Output[]): void {
+    container.classList.remove('hidden');
+    processingCard.classList.add('hidden');
+    grid.classList.remove('hidden');
+    grid.innerHTML = '';
+    for (const output of outputs) {
+      grid.appendChild(renderCard(output));
+    }
+  }
+
+  async function pollForCompletion(jobId: string, quality: string, format: string): Promise<void> {
+    if (pollInterval) clearInterval(pollInterval);
+
+    pollInterval = window.setInterval(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`);
+        const data = await res.json() as { status?: string; outputs?: Output[] };
+
+        if (data.status === 'ready' && data.outputs && data.outputs.length > 0) {
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+          showOutputs(data.outputs);
+        } else if (data.status === 'error') {
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+          // Error will be shown by ProgressCard
+        }
+        // Otherwise keep polling
+      } catch {
+        // Ignore errors, keep polling
+      }
+    }, 1000);
+  }
+
+  window.addEventListener('job-created', (e) => {
+    const detail = (e as CustomEvent<{ jobId: string; quality: string; format: string }>).detail;
+    currentJobId = detail.jobId;
+    currentQuality = detail.quality;
+    currentFormat = detail.format;
+
+    // Show processing state
+    showProcessing();
+
+    // Start polling for completion
+    void pollForCompletion(detail.jobId, detail.quality, detail.format);
+  });
+
+  anotherBtn?.addEventListener('click', () => {
+    container.classList.add('hidden');
+    grid.innerHTML = '';
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    currentJobId = null;
+    currentQuality = null;
+    currentFormat = null;
+    window.dispatchEvent(new CustomEvent('retry'));
+  });
+
+  // Clear polling on retry
+  window.addEventListener('retry', () => {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+    container.classList.add('hidden');
+    grid.innerHTML = '';
+    processingCard.classList.add('hidden');
+  });
+</script>

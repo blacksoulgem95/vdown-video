@@ -1,0 +1,48 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="Twitter / X"
+  title="Twitter / X Video Downloader — Download Videos & GIFs | VDown Video"
+  description="Download Twitter and X videos, GIFs, and clips in HD. Free, no signup, works with x.com and twitter.com links."
+  canonicalUrl="https://vdown.video/download/twitter"
+  heroHeadline="Twitter / X Video Downloader"
+  heroSubline="Download videos and GIFs from Twitter and X — any quality, any format, no account needed."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Does it work with both twitter.com and x.com links?',
+      a: 'Yes. VDown detects both twitter.com and x.com URLs and handles them identically.',
+    },
+    {
+      q: 'Can I download Twitter GIFs?',
+      a: 'Yes. Twitter GIFs are actually video loops internally — VDown downloads them as MP4.',
+    },
+    {
+      q: 'What quality is available for Twitter videos?',
+      a: 'Up to 1080p depending on the original upload. Multiple quality options are available for most videos.',
+    },
+    {
+      q: 'Can I download protected/private tweets?',
+      a: 'No. VDown only accesses publicly available tweets and videos.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download Twitter / X Videos</h2>
+    <ol>
+      <li>Find the tweet containing the video or GIF on Twitter or X.</li>
+      <li>Click the share icon → <strong>Copy link to tweet</strong>.</li>
+      <li>Paste the link above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Choose your quality (or audio-only for music clips).</li>
+      <li>Click <strong>START DOWNLOAD</strong> and save your file.</li>
+    </ol>
+    <h2>Supported URL Formats</h2>
+    <ul>
+      <li><code>twitter.com/username/status/1234567890</code></li>
+      <li><code>x.com/username/status/1234567890</code></li>
+    </ul>
+  `}
+/>

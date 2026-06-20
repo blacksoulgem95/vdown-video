@@ -1,0 +1,32 @@
+# ── PersistentVolumeClaims ────────────────────────────────────
+# Single /data mount split into three subdirs:
+#   /app/data/sqlite  → SQLite database (small, ~1 Gi)
+#   /app/data/cache   → Download cache (large, ~100 Gi)
+#   /app/data/cms     → CMS image uploads (small, included in data-pvc)
+# ───────────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cache-pvc
+  labels:
+    app: vdown-video
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pvc
+  labels:
+    app: vdown-video
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

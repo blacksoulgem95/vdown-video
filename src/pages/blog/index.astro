@@ -1,0 +1,130 @@
+---
+import Base from '@/layouts/Base.astro';
+import db from '@/lib/db';
+
+const PAGE_SIZE = 20;
+const pageParam = Number(Astro.url.searchParams.get('page') ?? '1');
+const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+const offset = (page - 1) * PAGE_SIZE;
+
+interface ArticleRow {
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  hero_image_url: string | null;
+  published_at: number | null;
+}
+
+const articles = db
+  .prepare(
+    `SELECT slug, title, excerpt, hero_image_url, published_at
+     FROM articles
+     ORDER BY published_at DESC, id DESC
+     LIMIT ? OFFSET ?`,
+  )
+  .all(PAGE_SIZE, offset) as ArticleRow[];
+
+const { total } = db
+  .prepare('SELECT COUNT(*) as total FROM articles')
+  .get() as { total: number };
+
+const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+---
+
+<Base
+  title="Blog — Video Downloading Tips, Guides & News | VDown Video"
+  description="Guides, tips, and news about downloading videos from YouTube, TikTok, Instagram, and more."
+  canonicalUrl={`https://vdown.video/blog${page > 1 ? `?page=${page}` : ''}`}
+>
+  <section class="max-w-5xl mx-auto px-4 py-12">
+    <h1
+      class="text-3xl font-bold mb-2"
+      style="color: var(--color-neon-purple-bright); font-family: var(--font-mono);"
+    >
+      BLOG
+    </h1>
+    <p class="text-sm mb-10" style="color: var(--color-text-secondary);">
+      Guides, tips, and news about downloading video from any platform.
+    </p>
+
+    {articles.length === 0 ? (
+      <p class="text-sm" style="color: var(--color-text-muted);">No articles yet. Check back soon.</p>
+    ) : (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {articles.map((a) => {
+          const date = a.published_at
+            ? new Date(a.published_at * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : null;
+          return (
+            <a
+              href={`/blog/${a.slug}`}
+              class="blog-card rounded-xl overflow-hidden no-underline flex flex-col transition-all duration-200"
+              style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default);"
+            >
+              {a.hero_image_url && (
+                <img
+                  src={a.hero_image_url}
+                  alt={a.title}
+                  class="w-full object-cover"
+                  style="height: 180px; background-color: var(--color-bg-elevated);"
+                  loading="lazy"
+                />
+              )}
+              {!a.hero_image_url && (
+                <div
+                  class="w-full flex items-center justify-center"
+                  style="height: 80px; background-color: var(--color-bg-elevated); color: var(--color-border-neon); font-size: 2rem;"
+                >
+                  ◉
+                </div>
+              )}
+              <div class="p-4 flex flex-col gap-2 flex-1">
+                <h2 class="text-sm font-semibold leading-snug" style="color: var(--color-text-primary);">{a.title}</h2>
+                {a.excerpt && (
+                  <p class="text-xs leading-relaxed line-clamp-3" style="color: var(--color-text-secondary);">{a.excerpt}</p>
+                )}
+                {date && (
+                  <p class="text-xs mt-auto pt-2" style="color: var(--color-text-muted); font-family: var(--font-mono);">{date}</p>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+
+    {/* Pagination */}
+    {totalPages > 1 && (
+      <nav class="flex items-center justify-center gap-3 mt-12" aria-label="Blog pagination">
+        {page > 1 && (
+          <a
+            href={`/blog?page=${page - 1}`}
+            class="px-4 py-2 rounded text-sm transition-all"
+            style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); color: var(--color-text-secondary); font-family: var(--font-mono);"
+          >
+            ← PREV
+          </a>
+        )}
+        <span class="text-sm" style="color: var(--color-text-muted); font-family: var(--font-mono);">
+          {page} / {totalPages}
+        </span>
+        {page < totalPages && (
+          <a
+            href={`/blog?page=${page + 1}`}
+            class="px-4 py-2 rounded text-sm transition-all"
+            style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); color: var(--color-text-secondary); font-family: var(--font-mono);"
+          >
+            NEXT →
+          </a>
+        )}
+      </nav>
+    )}
+  </section>
+</Base>
+
+<style>
+  .blog-card:hover {
+    border-color: var(--color-neon-purple) !important;
+    box-shadow: 0 0 16px var(--color-neon-glow);
+  }
+</style>

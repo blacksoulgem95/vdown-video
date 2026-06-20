@@ -1,0 +1,112 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import ArticleForm from '@/components/ArticleForm.astro';
+import db from '@/lib/db';
+import { saveCmsImage } from '@/lib/cms-images';
+
+const { slug } = Astro.params;
+
+interface ArticleRow {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  meta_description: string | null;
+  hero_image_url: string | null;
+  content_html: string | null;
+  seed_keyword: string | null;
+}
+
+const article = db
+  .prepare('SELECT id, slug, title, excerpt, meta_description, hero_image_url, content_html, seed_keyword FROM articles WHERE slug = ?')
+  .get(slug) as ArticleRow | undefined;
+
+if (!article) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+let error = '';
+let formValues = {
+  slug: article.slug,
+  title: article.title,
+  excerpt: article.excerpt ?? '',
+  meta_description: article.meta_description ?? '',
+  hero_image_url: article.hero_image_url ?? '',
+  content_html: article.content_html ?? '',
+  seed_keyword: article.seed_keyword ?? '',
+};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  let heroImageUrl = String(form.get('hero_image_url') ?? '').trim();
+
+  formValues = {
+    slug: article.slug,
+    title: String(form.get('title') ?? '').trim(),
+    excerpt: String(form.get('excerpt') ?? ''),
+    meta_description: String(form.get('meta_description') ?? ''),
+    hero_image_url: heroImageUrl,
+    content_html: String(form.get('content_html') ?? ''),
+    seed_keyword: String(form.get('seed_keyword') ?? ''),
+  };
+
+  const imageFile = form.get('hero_image_file');
+  if (imageFile instanceof File && imageFile.size > 0) {
+    try {
+      const result = await saveCmsImage(imageFile);
+      heroImageUrl = result.url;
+      formValues.hero_image_url = heroImageUrl;
+    } catch (e: unknown) {
+      error = `Image upload failed: ${(e as Error).message}`;
+    }
+  }
+
+  if (!error) {
+    if (!formValues.title) {
+      error = 'Title is required.';
+    } else {
+      db.prepare(
+        `UPDATE articles SET
+           title = ?, excerpt = ?, meta_description = ?, hero_image_url = ?,
+           content_html = ?, seed_keyword = ?, updated_at = unixepoch()
+         WHERE slug = ?`,
+      ).run(
+        formValues.title,
+        formValues.excerpt || null,
+        formValues.meta_description || null,
+        heroImageUrl || null,
+        formValues.content_html || null,
+        formValues.seed_keyword || null,
+        article.slug,
+      );
+      return Astro.redirect(`/admin/blog?flash=Article+%22${encodeURIComponent(formValues.title)}%22+updated.`);
+    }
+  }
+}
+---
+
+<Admin title={`Edit: ${article.title}`}>
+  <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+    <a href="/admin/blog" style="color: var(--color-text-muted); font-family: var(--font-mono); font-size: 0.75rem; text-decoration: none;">← BLOG CMS</a>
+    <span style="color: var(--color-border-default);">/</span>
+    <h1 style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-neon-purple-bright);">EDIT: {article.slug}</h1>
+    <a
+      href={`/blog/${article.slug}`}
+      target="_blank"
+      rel="noopener"
+      style="margin-left: auto; font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted); text-decoration: none; border: 1px solid var(--color-border-default); padding: 0.3rem 0.6rem; border-radius: 4px;"
+    >
+      VIEW LIVE ↗
+    </a>
+  </div>
+
+  <div style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: 10px; padding: 1.5rem;">
+    <ArticleForm
+      action={`/admin/blog/${article.slug}/edit`}
+      submitLabel="SAVE CHANGES →"
+      values={formValues}
+      slugReadonly={true}
+      error={error}
+    />
+  </div>
+</Admin>

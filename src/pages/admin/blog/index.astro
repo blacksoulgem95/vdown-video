@@ -1,0 +1,129 @@
+---
+import Admin from '@/layouts/Admin.astro';
+import db from '@/lib/db';
+
+interface ArticleRow {
+  id: number;
+  slug: string;
+  title: string;
+  published_at: number | null;
+  updated_at: number;
+}
+
+const articles = db
+  .prepare('SELECT id, slug, title, published_at, updated_at FROM articles ORDER BY id DESC')
+  .all() as ArticleRow[];
+
+const flash = Astro.url.searchParams.get('flash');
+---
+
+<Admin title="Blog CMS">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <h1 style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--color-neon-purple-bright); letter-spacing: 0.05em;">BLOG CMS</h1>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <button
+        id="blg-sync-btn"
+        style="padding: 0.5rem 1rem; background-color: transparent; border: 1px solid var(--color-neon-purple); border-radius: 6px; color: var(--color-neon-purple); font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer; letter-spacing: 0.05em;"
+      >
+        ↻ SYNC FROM BLG
+      </button>
+      <a
+        href="/admin/blog/new"
+        style="padding: 0.5rem 1rem; background-color: var(--color-neon-purple); border-radius: 6px; color: #fff; font-family: var(--font-mono); font-size: 0.7rem; text-decoration: none; font-weight: 600; letter-spacing: 0.05em;"
+      >
+        + NEW ARTICLE
+      </a>
+    </div>
+  </div>
+
+  {flash && (
+    <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-neon-purple-bright); background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-neon); border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 1rem;">{flash}</p>
+  )}
+
+  <p id="sync-result" style="display: none; font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-neon-purple-bright); background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-neon); border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 1rem;"></p>
+
+  <div style="background-color: var(--color-bg-surface); border: 1px solid var(--color-border-default); border-radius: 10px; overflow: hidden;">
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: var(--font-mono);">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--color-border-default);">
+            {['TITLE', 'SLUG', 'PUBLISHED', 'UPDATED', 'ACTIONS'].map((h) => (
+              <th style="text-align: left; padding: 0.65rem 1rem; color: var(--color-text-muted); font-weight: 600; letter-spacing: 0.05em; white-space: nowrap;">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {articles.length === 0 && (
+            <tr>
+              <td colspan="5" style="padding: 2rem 1rem; color: var(--color-text-muted); text-align: center;">
+                No articles. Create one above or sync from BLG.
+              </td>
+            </tr>
+          )}
+          {articles.map((a, i) => {
+            const published = a.published_at
+              ? new Date(a.published_at * 1000).toISOString().slice(0, 10)
+              : '—';
+            const updated = new Date(a.updated_at * 1000).toISOString().slice(0, 10);
+            return (
+              <tr style={`border-bottom: 1px solid var(--color-border-default); background-color: ${i % 2 === 0 ? 'transparent' : 'var(--color-bg-elevated)'};`}>
+                <td style="padding: 0.65rem 1rem; color: var(--color-text-primary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{a.title}</td>
+                <td style="padding: 0.65rem 1rem; color: var(--color-neon-purple);">{a.slug}</td>
+                <td style="padding: 0.65rem 1rem; color: var(--color-text-muted); white-space: nowrap;">{published}</td>
+                <td style="padding: 0.65rem 1rem; color: var(--color-text-muted); white-space: nowrap;">{updated}</td>
+                <td style="padding: 0.65rem 1rem; white-space: nowrap; display: flex; gap: 0.5rem;">
+                  <a
+                    href={`/blog/${a.slug}`}
+                    target="_blank"
+                    rel="noopener"
+                    style="padding: 0.3rem 0.6rem; background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-default); border-radius: 4px; color: var(--color-text-muted); text-decoration: none; font-size: 0.7rem;"
+                  >
+                    VIEW
+                  </a>
+                  <a
+                    href={`/admin/blog/${a.slug}/edit`}
+                    style="padding: 0.3rem 0.6rem; background-color: var(--color-bg-elevated); border: 1px solid var(--color-neon-purple); border-radius: 4px; color: var(--color-neon-purple); text-decoration: none; font-size: 0.7rem;"
+                  >
+                    EDIT
+                  </a>
+                  <form method="POST" action={`/admin/blog/${a.slug}/delete`} style="display: inline;" onsubmit="return confirm('Delete this article?')">
+                    <button
+                      type="submit"
+                      style="padding: 0.3rem 0.6rem; background-color: transparent; border: 1px solid var(--color-error); border-radius: 4px; color: var(--color-error); font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer;"
+                    >
+                      DEL
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</Admin>
+
+<script>
+  const syncBtn = document.getElementById('blg-sync-btn') as HTMLButtonElement;
+  const syncResult = document.getElementById('sync-result') as HTMLParagraphElement;
+
+  syncBtn.addEventListener('click', async () => {
+    syncBtn.disabled = true;
+    syncBtn.textContent = '↻ SYNCING…';
+    try {
+      const res = await fetch('/api/admin/blg-sync', { method: 'POST' });
+      const data = await res.json() as { synced?: number; error?: string };
+      syncResult.textContent = res.ok
+        ? `✓ Synced ${data.synced ?? 0} articles from BLG.`
+        : `✗ ${data.error ?? 'Sync failed.'}`;
+      syncResult.style.display = 'block';
+    } catch {
+      syncResult.textContent = '✗ Network error.';
+      syncResult.style.display = 'block';
+    } finally {
+      syncBtn.disabled = false;
+      syncBtn.textContent = '↻ SYNC FROM BLG';
+    }
+  });
+</script>

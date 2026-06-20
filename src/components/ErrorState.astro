@@ -1,0 +1,101 @@
+---
+interface Props {
+  message?: string;
+}
+const { message } = Astro.props;
+---
+
+<div
+  id="error-state"
+  class={message ? '' : 'hidden'}
+  role="alert"
+  aria-live="assertive"
+>
+  <div
+    class="rounded-xl p-6 flex flex-col items-center gap-5 text-center"
+    style="background-color: var(--color-bg-surface); border: 1px solid var(--color-error);"
+  >
+    <!-- Glitch icon -->
+    <div class="relative select-none" style="font-size: 2.5rem; line-height: 1;">
+      <span
+        id="error-icon"
+        class="glitch"
+        data-text="⚠"
+        style="color: var(--color-error);"
+      >⚠</span>
+    </div>
+
+    <!-- Error message -->
+    <div>
+      <p class="text-sm font-semibold mb-1" style="color: var(--color-error); font-family: var(--font-mono); letter-spacing: 0.05em;">
+        DOWNLOAD FAILED
+      </p>
+      <p
+        id="error-message"
+        class="text-sm max-w-sm mb-2"
+        style="color: var(--color-text-secondary);"
+      >
+        {message ?? ''}
+      </p>
+      <p
+        id="error-correlation"
+        class="text-xs"
+        style="color: var(--color-text-muted); font-family: var(--font-mono);"
+      ></p>
+    </div>
+
+    <!-- Retry CTA -->
+    <button
+      id="error-retry-btn"
+      type="button"
+      class="px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200"
+      style="
+        background-color: transparent;
+        color: var(--color-error);
+        border: 1px solid var(--color-error);
+        font-family: var(--font-mono);
+        letter-spacing: 0.05em;
+      "
+    >
+      ↩ TRY AGAIN
+    </button>
+  </div>
+</div>
+
+<style>
+  #error-retry-btn:hover {
+    background-color: var(--color-error) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px var(--color-error-glow);
+  }
+</style>
+
+<script>
+  const errorState = document.getElementById('error-state') as HTMLDivElement;
+  const errorMessage = document.getElementById('error-message') as HTMLParagraphElement;
+  const errorCorrelation = document.getElementById('error-correlation') as HTMLParagraphElement;
+  const retryBtn = document.getElementById('error-retry-btn') as HTMLButtonElement;
+
+  window.addEventListener('download-error', (e) => {
+    const detail = (e as CustomEvent<{ message: string; correlationId?: string }>).detail;
+    errorMessage.textContent = detail.message;
+    if (detail.correlationId) {
+      errorCorrelation.textContent = `Correlation ID: ${detail.correlationId}`;
+    }
+    errorState.classList.remove('hidden');
+  });
+
+  retryBtn.addEventListener('click', () => {
+    errorState.classList.add('hidden');
+    errorMessage.textContent = '';
+    errorCorrelation.textContent = '';
+    window.dispatchEvent(new CustomEvent('retry'));
+  });
+
+  // Hide on retry from other sources
+  window.addEventListener('retry', () => {
+    errorState.classList.add('hidden');
+    errorMessage.textContent = '';
+    errorCorrelation.textContent = '';
+  });
+</script>

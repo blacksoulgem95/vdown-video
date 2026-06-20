@@ -1,0 +1,141 @@
+---
+interface Props {
+  action: string;
+  submitLabel: string;
+  values?: {
+    slug?: string;
+    title?: string;
+    excerpt?: string;
+    meta_description?: string;
+    hero_image_url?: string;
+    content_html?: string;
+    seed_keyword?: string;
+  };
+  slugReadonly?: boolean;
+  error?: string;
+}
+
+const { action, submitLabel, values = {}, slugReadonly = false, error } = Astro.props;
+
+const field = (
+  id: string,
+  label: string,
+  value: string,
+  opts: { type?: string; rows?: number; required?: boolean; readonly?: boolean; monospace?: boolean } = {},
+) => ({ id, label, value, ...opts });
+
+const textFields = [
+  field('title', 'Title', values.title ?? '', { required: true }),
+  field('slug', 'Slug', values.slug ?? '', { required: true, monospace: true, readonly: slugReadonly }),
+  field('excerpt', 'Excerpt', values.excerpt ?? ''),
+  field('meta_description', 'Meta Description', values.meta_description ?? ''),
+  field('hero_image_url', 'Hero Image URL (leave blank to upload below)', values.hero_image_url ?? '', { type: 'url' }),
+  field('seed_keyword', 'Seed Keyword', values.seed_keyword ?? '', { monospace: true }),
+];
+---
+
+<form method="POST" action={action} enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1.25rem;">
+  {error && (
+    <div style="background-color: var(--color-bg-elevated); border: 1px solid var(--color-error); border-radius: 6px; padding: 0.6rem 0.75rem; color: var(--color-error); font-family: var(--font-mono); font-size: 0.8rem;">
+      {error}
+    </div>
+  )}
+
+  {textFields.map((f) => (
+    <div>
+      <label for={f.id} style="display: block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted); letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+        {f.label.toUpperCase()}{f.required ? ' *' : ''}
+      </label>
+      <input
+        id={f.id}
+        name={f.id}
+        type={f.type ?? 'text'}
+        value={f.value}
+        required={f.required}
+        readonly={f.readonly}
+        style={`width: 100%; padding: 0.55rem 0.75rem; background-color: ${f.readonly ? 'var(--color-bg-base)' : 'var(--color-bg-elevated)'}; border: 1px solid ${f.readonly ? 'var(--color-border-default)' : 'var(--color-border-default)'}; border-radius: 6px; color: ${f.readonly ? 'var(--color-text-muted)' : 'var(--color-text-primary)'}; font-family: ${f.monospace ? 'var(--font-mono)' : 'var(--font-sans)'}; font-size: 0.85rem; outline: none; box-sizing: border-box;`}
+      />
+    </div>
+  ))}
+
+  <!-- Image upload -->
+  <div>
+    <label for="hero_image_file" style="display: block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted); letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+      UPLOAD HERO IMAGE (JPEG/PNG/WEBP, max 8 MB)
+    </label>
+    <input
+      id="hero_image_file"
+      name="hero_image_file"
+      type="file"
+      accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+      style="width: 100%; padding: 0.55rem 0.75rem; background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-default); border-radius: 6px; color: var(--color-text-primary); font-family: var(--font-mono); font-size: 0.8rem; outline: none; box-sizing: border-box;"
+    />
+    {values.hero_image_url && (
+      <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+        <img
+          src={values.hero_image_url}
+          alt="Current hero image"
+          style="height: 60px; width: auto; border-radius: 4px; object-fit: cover; border: 1px solid var(--color-border-default);"
+        />
+        <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted);">Current image</span>
+      </div>
+    )}
+  </div>
+
+  <!-- Content HTML -->
+  <div>
+    <label for="content_html" style="display: block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted); letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+      CONTENT HTML
+    </label>
+    <textarea
+      id="content_html"
+      name="content_html"
+      rows={16}
+      style="width: 100%; padding: 0.6rem 0.75rem; background-color: var(--color-bg-elevated); border: 1px solid var(--color-border-default); border-radius: 6px; color: var(--color-text-primary); font-family: var(--font-mono); font-size: 0.8rem; outline: none; box-sizing: border-box; resize: vertical; line-height: 1.5;"
+    >{values.content_html ?? ''}</textarea>
+  </div>
+
+  <!-- Preview pane toggle -->
+  <div>
+    <button
+      type="button"
+      id="preview-toggle"
+      style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-text-muted); background: none; border: none; cursor: pointer; text-decoration: underline; padding: 0; letter-spacing: 0.05em;"
+    >
+      ▶ PREVIEW CONTENT
+    </button>
+    <div
+      id="preview-pane"
+      style="display: none; margin-top: 0.75rem; padding: 1.25rem; background-color: var(--color-bg-base); border: 1px solid var(--color-border-default); border-radius: 8px; font-size: 0.85rem; color: var(--color-text-secondary); line-height: 1.6; max-height: 400px; overflow-y: auto;"
+    ></div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display: flex; gap: 0.75rem; align-items: center; padding-top: 0.5rem; border-top: 1px solid var(--color-border-default);">
+    <button
+      type="submit"
+      style="padding: 0.6rem 1.5rem; background-color: var(--color-neon-purple); color: #fff; border: none; border-radius: 6px; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; cursor: pointer; letter-spacing: 0.05em;"
+    >
+      {submitLabel}
+    </button>
+    <a
+      href="/admin/blog"
+      style="padding: 0.6rem 1rem; background-color: transparent; border: 1px solid var(--color-border-default); border-radius: 6px; color: var(--color-text-muted); font-family: var(--font-mono); font-size: 0.8rem; text-decoration: none;"
+    >
+      CANCEL
+    </a>
+  </div>
+</form>
+
+<script>
+  const toggle = document.getElementById('preview-toggle') as HTMLButtonElement;
+  const pane = document.getElementById('preview-pane') as HTMLDivElement;
+  const textarea = document.getElementById('content_html') as HTMLTextAreaElement;
+
+  toggle.addEventListener('click', () => {
+    const open = pane.style.display === 'none';
+    pane.style.display = open ? 'block' : 'none';
+    toggle.textContent = open ? '▼ HIDE PREVIEW' : '▶ PREVIEW CONTENT';
+    if (open) pane.innerHTML = textarea.value;
+  });
+</script>

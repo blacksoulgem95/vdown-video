@@ -1,0 +1,50 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="Facebook"
+  title="Facebook Video Downloader — Download Reels, Videos & Photos | VDown Video"
+  description="Download Facebook videos, Reels, and public photos in HD. Free, no signup, no app required."
+  canonicalUrl="https://vdown.video/download/facebook"
+  heroHeadline="Facebook Video Downloader"
+  heroSubline="Download Facebook videos, Reels, and public photos in HD — no account, no app, instant."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Can I download Facebook Reels?',
+      a: 'Yes. Paste the Reel URL and VDown fetches it like any other video. All supported qualities available.',
+    },
+    {
+      q: 'Can I download private Facebook videos?',
+      a: 'No. VDown only downloads publicly accessible content. Private or friends-only videos require login access VDown does not have.',
+    },
+    {
+      q: 'What URL formats does VDown support for Facebook?',
+      a: 'Standard facebook.com/watch links, fb.watch short links, and Reel URLs are all supported.',
+    },
+    {
+      q: 'What quality is available for Facebook videos?',
+      a: 'Up to 1080p for most Facebook videos. Quality depends on what Facebook encoded at upload time.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download Facebook Videos</h2>
+    <ol>
+      <li>Find the Facebook video or Reel you want to download.</li>
+      <li>Copy the URL from your browser's address bar or the "Copy link" option.</li>
+      <li>Paste it above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Pick video quality or audio-only format.</li>
+      <li>Click <strong>START DOWNLOAD</strong>, then <strong>DOWNLOAD</strong> when ready.</li>
+    </ol>
+    <h2>Supported Facebook URL Formats</h2>
+    <ul>
+      <li><code>facebook.com/watch?v=...</code></li>
+      <li><code>facebook.com/reel/...</code></li>
+      <li><code>fb.watch/...</code></li>
+      <li><code>m.facebook.com/...</code></li>
+    </ul>
+  `}
+/>

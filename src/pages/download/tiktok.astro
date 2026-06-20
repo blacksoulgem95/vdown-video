@@ -1,0 +1,48 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="TikTok"
+  title="TikTok Video Downloader — Download Without Watermark | VDown Video"
+  description="Download TikTok videos without watermark in HD. Free, no login, instant download."
+  canonicalUrl="https://vdown.video/download/tiktok"
+  heroHeadline="TikTok Video Downloader"
+  heroSubline="Download TikTok videos without the watermark — full HD, no account, no app needed."
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'Will the downloaded TikTok video have a watermark?',
+      a: 'No. VDown fetches the original source video directly from TikTok, which contains no platform watermark.',
+    },
+    {
+      q: 'Can I download TikTok videos as MP3?',
+      a: 'Yes. Pick an audio-only format in the format picker to extract just the audio track.',
+    },
+    {
+      q: 'Does it work with vm.tiktok.com short links?',
+      a: 'Yes. Both standard tiktok.com links and vm.tiktok.com short links are supported.',
+    },
+    {
+      q: 'Can I download TikTok Live streams?',
+      a: 'Live streams are not supported. Only uploaded videos and Slideshows are available.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download TikTok Videos Without Watermark</h2>
+    <ol>
+      <li>Open TikTok and find the video you want to save.</li>
+      <li>Tap <strong>Share → Copy link</strong> (or copy from the browser).</li>
+      <li>Paste the link above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Choose quality — most TikTok videos max at 1080p.</li>
+      <li>Click <strong>START DOWNLOAD</strong> and save when ready.</li>
+    </ol>
+    <h2>Supported TikTok URL Formats</h2>
+    <ul>
+      <li>Standard: <code>tiktok.com/@username/video/1234567890</code></li>
+      <li>Short: <code>vm.tiktok.com/ZM...</code></li>
+    </ul>
+  `}
+/>

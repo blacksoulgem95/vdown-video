@@ -1,0 +1,18 @@
+# ── Service ────────────────────────────────────────────────────
+# ClusterIP — internal access only (ingress handles external traffic)
+# ───────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: vdown-video
+  labels:
+    app: vdown-video
+spec:
+  type: ClusterIP
+  selector:
+    app: vdown-video
+  ports:
+    - port: 4321
+      targetPort: 4321
+      protocol: TCP
+      name: http

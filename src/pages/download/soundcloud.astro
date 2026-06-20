@@ -1,0 +1,54 @@
+---
+import PlatformPage from '@/components/PlatformPage.astro';
+
+const initialUrl = Astro.url.searchParams.get('url') ?? '';
+---
+
+<PlatformPage
+  platform="SoundCloud"
+  title="SoundCloud Downloader — Download Tracks & Mixes as MP3 | VDown Video"
+  description="Download SoundCloud tracks, mixes, and playlists as MP3, AAC, or M4A. Free, no signup."
+  canonicalUrl="https://vdown.video/download/soundcloud"
+  heroHeadline="SoundCloud Audio Downloader"
+  heroSubline="Download SoundCloud tracks, mixes, and podcasts as MP3, AAC, or M4A — instant, free, no account."
+  audioOnly={true}
+  initialUrl={initialUrl}
+  faqs={[
+    {
+      q: 'What audio formats can I download from SoundCloud?',
+      a: 'MP3, AAC, M4A, and OGG are all available. MP3 is the most compatible for general use.',
+    },
+    {
+      q: 'Can I download SoundCloud mixes and podcasts?',
+      a: 'Yes. As long as the track or mix is public, VDown can download it regardless of length.',
+    },
+    {
+      q: 'Does it work with on.soundcloud.com short links?',
+      a: 'Yes. SoundCloud short links (on.soundcloud.com) resolve correctly.',
+    },
+    {
+      q: 'Can I download private SoundCloud tracks?',
+      a: 'No. Only publicly accessible tracks and mixes are available — no login is used.',
+    },
+    {
+      q: 'What bitrate will the download be?',
+      a: 'VDown fetches the highest quality stream SoundCloud serves publicly, typically 128kbps MP3 for most tracks.',
+    },
+  ]}
+  seoBody={`
+    <h2>How to Download SoundCloud Tracks</h2>
+    <ol>
+      <li>Find the track, mix, or podcast on SoundCloud.</li>
+      <li>Click <strong>Share → Copy link</strong> or copy from the browser address bar.</li>
+      <li>Paste the link above and click <strong>ANALYSE URL</strong>.</li>
+      <li>Pick your audio format — MP3 is recommended for widest compatibility.</li>
+      <li>Click <strong>START DOWNLOAD</strong> and save your audio file.</li>
+    </ol>
+    <h2>Supported SoundCloud URL Formats</h2>
+    <ul>
+      <li>Tracks: <code>soundcloud.com/artist/track-name</code></li>
+      <li>Sets/Playlists: <code>soundcloud.com/artist/sets/...</code></li>
+      <li>Short links: <code>on.soundcloud.com/...</code></li>
+    </ul>
+  `}
+/>
