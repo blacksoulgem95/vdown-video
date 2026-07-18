@@ -23,12 +23,15 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       ffmpeg \
       python3 \
-      python3-pip && \
+      python3-pip \
+      python3-venv && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# yt-dlp + gallery-dl
-RUN pip3 install --no-cache-dir yt-dlp gallery-dl
+# yt-dlp + gallery-dl installed into an isolated venv (Debian 12 is PEP 668 externally-managed)
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir yt-dlp gallery-dl
+ENV PATH="/opt/venv/bin:${PATH}"
 
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
