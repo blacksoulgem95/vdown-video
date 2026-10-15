@@ -44,7 +44,7 @@ describe('fetchMetadata', () => {
 
   it('returns parsed metadata on success', async () => {
     spawnImpl = () => makeProc(SAMPLE_META, '');
-    const meta = await fetchMetadata('https://youtube.com/watch?v=abc');
+    const meta = await fetchMetadata('https://youtube.com/watch?v=abc', 'test1234');
     expect(meta.title).toBe('Test Video');
     expect(meta.thumbnail).toBe('https://img.example.com/thumb.jpg');
     expect(meta.duration).toBe(120);
@@ -54,7 +54,7 @@ describe('fetchMetadata', () => {
 
   it('marks audio-only format correctly', async () => {
     spawnImpl = () => makeProc(SAMPLE_META, '');
-    const meta = await fetchMetadata('https://youtube.com/watch?v=abc');
+    const meta = await fetchMetadata('https://youtube.com/watch?v=abc', 'test1234');
     expect(meta.formats[0]?.hasVideo).toBe(true);
     expect(meta.formats[1]?.hasVideo).toBe(false);
     expect(meta.formats[1]?.hasAudio).toBe(true);
@@ -62,7 +62,7 @@ describe('fetchMetadata', () => {
 
   it('throws on non-zero exit code', async () => {
     spawnImpl = () => makeProc('', 'ERROR: Private video', 1);
-    await expect(fetchMetadata('https://youtube.com/watch?v=private')).rejects.toThrow();
+    await expect(fetchMetadata('https://youtube.com/watch?v=private', 'test1234')).rejects.toThrow();
   });
 
   it('uses YTDLP_PATH env var as binary', async () => {
@@ -71,7 +71,7 @@ describe('fetchMetadata', () => {
     process.env['YTDLP_PATH'] = '/custom/yt-dlp';
     // Re-import to pick up env var (module cached, but YTDLP_BIN read at module init)
     // Since the env var is read at module load time, we just verify the call uses the right bin
-    await fetchMetadata('https://youtube.com/watch?v=abc');
+    await fetchMetadata('https://youtube.com/watch?v=abc', 'test1234');
     // The spawn was already set at module load with default, verify call happened
     expect(calls.length).toBeGreaterThan(0);
   });
@@ -79,10 +79,33 @@ describe('fetchMetadata', () => {
   it('passes --no-playlist and --dump-json flags', async () => {
     const calls: unknown[][] = [];
     spawnImpl = (...args: unknown[]) => { calls.push(args); return makeProc(SAMPLE_META, ''); };
-    await fetchMetadata('https://youtube.com/watch?v=abc');
+    await fetchMetadata('https://youtube.com/watch?v=abc', 'test1234');
     const args = calls[0]?.[1] as string[];
     expect(args).toContain('--no-playlist');
     expect(args).toContain('--dump-json');
+  });
+
+  it('kills yt-dlp and rejects when metadata extraction times out', async () => {
+    vi.useFakeTimers();
+    const proc = new EventEmitter() as EventEmitter & {
+      stdout: EventEmitter;
+      stderr: EventEmitter;
+      kill: ReturnType<typeof vi.fn>;
+    };
+    proc.stdout = new EventEmitter();
+    proc.stderr = new EventEmitter();
+    proc.kill = vi.fn();
+    spawnImpl = () => proc;
+
+    try {
+      const pending = fetchMetadata('https://youtube.com/watch?v=abc', 'test1234');
+      const rejected = expect(pending).rejects.toThrow('Download failed (ID: test1234)');
+      await vi.advanceTimersByTimeAsync(60_000);
+      await rejected;
+      expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -111,7 +134,7 @@ describe('downloadSource', () => {
 describe('getAvailableFormats', () => {
   it('returns format array', async () => {
     spawnImpl = () => makeProc(SAMPLE_META, '');
-    const formats = await getAvailableFormats('https://youtube.com/watch?v=abc');
+    const formats = await getAvailableFormats('https://youtube.com/watch?v=abc', 'test1234');
     expect(Array.isArray(formats)).toBe(true);
     expect(formats.length).toBeGreaterThan(0);
   });

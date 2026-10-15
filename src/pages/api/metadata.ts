@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { fetchMetadata } from '@/lib/downloader';
 import { detectPlatform, isValidUrl } from '@/lib/platform-detect';
 import { checkRateLimit, RateLimitError } from '@/lib/ratelimit';
+import { generateCorrelationId } from '@/lib/correlation';
 
 export const POST: APIRoute = async ({ request }) => {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -34,7 +35,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
-    const meta = await fetchMetadata(url);
+    const meta = await fetchMetadata(url, generateCorrelationId());
     const platform = detectPlatform(url);
     return json({ ...meta, platform });
   } catch (err) {

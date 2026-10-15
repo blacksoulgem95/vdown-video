@@ -32,18 +32,42 @@ export interface DownloadProgress {
   eta: string;
 }
 
+interface RunProcessOptions {
+  onStderr?: (line: string) => void;
+  timeoutMs?: number;
+}
+
 const YTDLP_BIN = process.env['YTDLP_PATH'] ?? 'yt-dlp';
+const METADATA_TIMEOUT_MS = 60_000;
 
 function runProcess(
   cmd: string,
   args: string[],
   corrId: string,
-  onStderr?: (line: string) => void,
+  { onStderr, timeoutMs }: RunProcessOptions = {},
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
+    let settled = false;
+    const timeout = timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          proc.kill('SIGTERM');
+          const genericMsg = logToolError(
+            corrId,
+            'yt-dlp',
+            `Process timed out after ${timeoutMs}ms`,
+            { args, timeoutMs },
+          );
+          settled = true;
+          reject(new Error(genericMsg));
+        }, timeoutMs);
+
+    const clearTimeoutIfSet = (): void => {
+      if (timeout) clearTimeout(timeout);
+    };
 
     proc.stdout.on('data', (d: Buffer) => {
       stdout += d.toString();
@@ -58,6 +82,9 @@ function runProcess(
     });
 
     proc.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeoutIfSet();
       if (code === 0) {
         resolve(stdout);
       } else {
@@ -67,6 +94,9 @@ function runProcess(
     });
 
     proc.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeoutIfSet();
       const genericMsg = logToolError(corrId, 'yt-dlp', err.message, { type: 'spawn' });
       reject(new Error(genericMsg));
     });
@@ -82,7 +112,7 @@ export async function fetchMetadata(
     '--no-playlist',
     '--no-warnings',
     url,
-  ], corrId);
+  ], corrId, { timeoutMs: METADATA_TIMEOUT_MS });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = JSON.parse(raw) as Record<string, any>;
@@ -133,24 +163,26 @@ export async function downloadSource(
 
   let resolvedPath = '';
 
-  await runProcess(YTDLP_BIN, args, corrId, (line) => {
-    // Parse progress: [download]  45.2% of  123.45MiB at  1.23MiB/s ETA 00:10
-    const progressMatch = /\[download\]\s+([\d.]+)%.*?at\s+(\S+).*?ETA\s+(\S+)/.exec(line);
-    if (progressMatch && onProgress) {
-      onProgress({
-        percent: parseFloat(progressMatch[1] ?? '0'),
-        speed: progressMatch[2] ?? '',
-        eta: progressMatch[3] ?? '',
-      });
-    }
+  await runProcess(YTDLP_BIN, args, corrId, {
+    onStderr: (line) => {
+      // Parse progress: [download]  45.2% of  123.45MiB at  1.23MiB/s ETA 00:10
+      const progressMatch = /\[download\]\s+([\d.]+)%.*?at\s+(\S+).*?ETA\s+(\S+)/.exec(line);
+      if (progressMatch && onProgress) {
+        onProgress({
+          percent: parseFloat(progressMatch[1] ?? '0'),
+          speed: progressMatch[2] ?? '',
+          eta: progressMatch[3] ?? '',
+        });
+      }
 
-    // Capture final filename
-    const destMatch = /\[download\] Destination: (.+)/.exec(line)
-      ?? /\[Merger\] Merging formats into "(.+)"/.exec(line)
-      ?? /\[ffmpeg\] Destination: (.+)/.exec(line);
-    if (destMatch?.[1]) {
-      resolvedPath = destMatch[1].trim();
-    }
+      // Capture final filename
+      const destMatch = /\[download\] Destination: (.+)/.exec(line)
+        ?? /\[Merger\] Merging formats into "(.+)"/.exec(line)
+        ?? /\[ffmpeg\] Destination: (.+)/.exec(line);
+      if (destMatch?.[1]) {
+        resolvedPath = destMatch[1].trim();
+      }
+    },
   });
 
   // Fall back to finding source.* if path not captured from stderr
